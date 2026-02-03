@@ -71,10 +71,10 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
+    <div className="min-h-screen bg-dark flex">
+      {/* Left Side - Heading */}
+      <div className="hidden lg:flex lg:w-1/2 bg-dark-light flex-col justify-center px-16">
+        <Link to="/" className="flex items-center gap-3 mb-12">
           <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
             <svg className="w-7 h-7 text-dark" fill="currentColor" viewBox="0 0 24 24">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -82,12 +82,61 @@ const LoginPage: React.FC = () => {
           </div>
           <h1 className="text-3xl font-bold text-white">Rinth</h1>
         </Link>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-gray-400">Sign in to continue building amazing projects</p>
+        
+        <div className="animate-fade-in">
+          <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
+            Welcome Back
+          </h2>
+          <p className="text-xl text-gray-400 mb-8 leading-relaxed">
+            Sign in to continue building amazing projects with AI-powered tools
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-gray-300">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span>Access your project history</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-300">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span>Share with the community</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-300">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span>Save and export your projects</span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md animate-fade-in">
+          {/* Mobile Logo */}
+          <Link to="/" className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+              <svg className="w-7 h-7 text-dark" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-white">Rinth</h1>
+          </Link>
+
+          {/* Mobile Header */}
+          <div className="text-center lg:text-left mb-8 lg:hidden">
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
+            <p className="text-gray-400">Sign in to continue building</p>
+          </div>
 
         {/* Main Card */}
         <div className="bg-dark-light rounded-2xl border border-dark-lighter p-8">
@@ -214,6 +263,7 @@ const LoginPage: React.FC = () => {
           </svg>
           Back to Home
         </Link>
+        </div>
       </div>
     </div>
   )

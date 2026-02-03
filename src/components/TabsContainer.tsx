@@ -37,10 +37,10 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('instructions')
 
   const tabs = [
-    { id: 'instructions' as TabType, label: 'Instructions', icon: '📋' },
-    { id: 'components' as TabType, label: 'Components', icon: '🔧' },
-    { id: 'code' as TabType, label: 'Code', icon: '💻' },
-    { id: 'buylinks' as TabType, label: 'Buy Links', icon: '🛒' },
+    { id: 'instructions' as TabType, label: 'Instructions', icon: '' },
+    { id: 'components' as TabType, label: 'Components', icon: '' },
+    { id: 'code' as TabType, label: 'Code', icon: '' },
+    { id: 'buylinks' as TabType, label: 'Buy Links', icon: '' },
   ]
 
   return (

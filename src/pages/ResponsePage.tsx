@@ -5,6 +5,7 @@ import ProjectImage from '../components/ProjectImage'
 import ProjectDescription from '../components/ProjectDescription'
 import TabsContainer from '../components/TabsContainer'
 import { supabase } from '../lib/supabase'
+import jsPDF from 'jspdf'
 
 // Mock data - in real app, this would come from Gemini API
 const mockProjectData = {
@@ -165,6 +166,226 @@ const ResponsePage: React.FC = () => {
     }, 1500)
   }
 
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 20
+    const contentWidth = pageWidth - 2 * margin
+    let yPos = margin
+
+    // Colors matching the UI
+    const colors = {
+      dark: [26, 26, 26] as [number, number, number],
+      darkLight: [45, 45, 45] as [number, number, number],
+      primary: [245, 197, 24] as [number, number, number],
+      white: [255, 255, 255] as [number, number, number],
+      gray: [156, 163, 175] as [number, number, number],
+      green: [34, 197, 94] as [number, number, number],
+    }
+
+    // Helper function to add new page if needed
+    const checkNewPage = (height: number) => {
+      if (yPos + height > pageHeight - margin) {
+        doc.addPage()
+        yPos = margin
+        // Add background to new page
+        doc.setFillColor(...colors.dark)
+        doc.rect(0, 0, pageWidth, pageHeight, 'F')
+      }
+    }
+
+    // Helper to draw section header
+    const drawSectionHeader = (title: string) => {
+      checkNewPage(25)
+      doc.setFillColor(...colors.darkLight)
+      doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F')
+      doc.setFillColor(...colors.primary)
+      doc.rect(margin, yPos, 4, 12, 'F')
+      doc.setTextColor(...colors.primary)
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.text(title, margin + 10, yPos + 8)
+      yPos += 18
+    }
+
+    // Background
+    doc.setFillColor(...colors.dark)
+    doc.rect(0, 0, pageWidth, pageHeight, 'F')
+
+    // Header with logo placeholder
+    doc.setFillColor(...colors.primary)
+    doc.roundedRect(margin, yPos, 12, 12, 2, 2, 'F')
+    doc.setTextColor(...colors.dark)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('⚡', margin + 3, yPos + 8)
+    
+    doc.setTextColor(...colors.white)
+    doc.setFontSize(20)
+    doc.text('Rinth', margin + 18, yPos + 10)
+    
+    doc.setTextColor(...colors.gray)
+    doc.setFontSize(8)
+    doc.text('AI Project Builder', margin + 48, yPos + 10)
+    yPos += 25
+
+    // Project Title
+    doc.setTextColor(...colors.white)
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    const titleLines = doc.splitTextToSize(mockProjectData.title, contentWidth)
+    doc.text(titleLines, margin, yPos)
+    yPos += titleLines.length * 10 + 5
+
+    // Tags
+    let tagX = margin
+    doc.setFontSize(8)
+    mockProjectData.tags.forEach((tag) => {
+      const tagWidth = doc.getTextWidth(tag) + 10
+      if (tagX + tagWidth > pageWidth - margin) {
+        tagX = margin
+        yPos += 10
+      }
+      doc.setFillColor(...colors.darkLight)
+      doc.roundedRect(tagX, yPos, tagWidth, 8, 2, 2, 'F')
+      doc.setTextColor(...colors.primary)
+      doc.text(tag, tagX + 5, yPos + 5.5)
+      tagX += tagWidth + 5
+    })
+    yPos += 18
+
+    // User Prompt Box
+    doc.setFillColor(...colors.darkLight)
+    doc.roundedRect(margin, yPos, contentWidth, 18, 3, 3, 'F')
+    doc.setTextColor(...colors.gray)
+    doc.setFontSize(8)
+    doc.text('Your prompt:', margin + 5, yPos + 6)
+    doc.setTextColor(...colors.white)
+    doc.setFontSize(10)
+    const promptText = doc.splitTextToSize(`"${prompt}"`, contentWidth - 10)
+    doc.text(promptText[0], margin + 5, yPos + 13)
+    yPos += 25
+
+    // Description Section
+    drawSectionHeader('📝 DESCRIPTION')
+    doc.setTextColor(...colors.white)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const descLines = doc.splitTextToSize(mockProjectData.description, contentWidth - 10)
+    descLines.forEach((line: string) => {
+      checkNewPage(7)
+      doc.text(line, margin + 5, yPos)
+      yPos += 6
+    })
+    yPos += 10
+
+    // Instructions Section
+    drawSectionHeader('📋 INSTRUCTIONS')
+    mockProjectData.instructions.forEach((instruction, index) => {
+      checkNewPage(20)
+      // Step number circle
+      doc.setFillColor(...colors.primary)
+      doc.circle(margin + 8, yPos + 3, 5, 'F')
+      doc.setTextColor(...colors.dark)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${index + 1}`, margin + 6, yPos + 5)
+      
+      // Instruction text
+      doc.setTextColor(...colors.white)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      const instrLines = doc.splitTextToSize(instruction, contentWidth - 25)
+      instrLines.forEach((line: string, lineIndex: number) => {
+        checkNewPage(6)
+        doc.text(line, margin + 18, yPos + (lineIndex * 5))
+      })
+      yPos += Math.max(instrLines.length * 5, 8) + 5
+    })
+    yPos += 5
+
+    // Components Section
+    drawSectionHeader('🔧 COMPONENTS')
+    // Table header
+    doc.setFillColor(...colors.darkLight)
+    doc.rect(margin, yPos, contentWidth, 8, 'F')
+    doc.setTextColor(...colors.primary)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Component', margin + 5, yPos + 5.5)
+    doc.text('Qty', margin + 80, yPos + 5.5)
+    doc.text('Description', margin + 100, yPos + 5.5)
+    yPos += 10
+
+    // Table rows
+    mockProjectData.components.forEach((comp, index) => {
+      checkNewPage(10)
+      if (index % 2 === 0) {
+        doc.setFillColor(35, 35, 35)
+        doc.rect(margin, yPos - 2, contentWidth, 8, 'F')
+      }
+      doc.setTextColor(...colors.white)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(comp.name.substring(0, 25), margin + 5, yPos + 4)
+      doc.setTextColor(...colors.primary)
+      doc.text(`x${comp.quantity}`, margin + 80, yPos + 4)
+      doc.setTextColor(...colors.gray)
+      doc.text(comp.description.substring(0, 35), margin + 100, yPos + 4)
+      yPos += 8
+    })
+    yPos += 10
+
+    // Code Section
+    drawSectionHeader('💻 CODE')
+    mockProjectData.code.forEach((codeBlock) => {
+      checkNewPage(30)
+      // Filename header
+      doc.setFillColor(30, 30, 30)
+      doc.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F')
+      doc.setTextColor(...colors.green)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`📄 ${codeBlock.filename}`, margin + 5, yPos + 7)
+      doc.setTextColor(...colors.gray)
+      doc.text(codeBlock.language, pageWidth - margin - 20, yPos + 7)
+      yPos += 12
+
+      // Code content (first 30 lines)
+      doc.setFillColor(20, 20, 20)
+      const codeLines = codeBlock.code.split('\n').slice(0, 30)
+      const codeHeight = Math.min(codeLines.length * 4 + 6, 80)
+      checkNewPage(codeHeight)
+      doc.roundedRect(margin, yPos, contentWidth, codeHeight, 2, 2, 'F')
+      
+      doc.setTextColor(...colors.gray)
+      doc.setFontSize(6)
+      doc.setFont('courier', 'normal')
+      codeLines.forEach((line, i) => {
+        if (yPos + (i * 4) + 4 < pageHeight - margin) {
+          const truncatedLine = line.substring(0, 80)
+          doc.text(truncatedLine, margin + 5, yPos + 4 + (i * 4))
+        }
+      })
+      yPos += codeHeight + 10
+    })
+
+    // Footer
+    checkNewPage(20)
+    yPos = pageHeight - 15
+    doc.setDrawColor(...colors.darkLight)
+    doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5)
+    doc.setTextColor(...colors.gray)
+    doc.setFontSize(8)
+    doc.text('Generated by Rinth - AI Project Builder', margin, yPos)
+    doc.setTextColor(...colors.primary)
+    doc.text(new Date().toLocaleDateString(), pageWidth - margin - 25, yPos)
+
+    // Save the PDF
+    doc.save(`${mockProjectData.title.replace(/\s+/g, '_')}_project.pdf`)
+  }
+
   useEffect(() => {
     // Check current auth state
     const checkUser = async () => {
@@ -307,7 +528,10 @@ const ResponsePage: React.FC = () => {
               
               {/* Action Buttons */}
               <div className="mt-6 flex gap-4 animate-slide-left" style={{ animationDelay: '0.2s' }}>
-                <button className="flex-1 bg-primary text-dark font-semibold py-3 px-6 rounded-xl hover:bg-primary-light transition-colors flex items-center justify-center gap-2">
+                <button 
+                  onClick={handleDownloadPDF}
+                  className="flex-1 bg-primary text-dark font-semibold py-3 px-6 rounded-xl hover:bg-primary-light transition-colors flex items-center justify-center gap-2"
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>

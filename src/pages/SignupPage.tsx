@@ -6,6 +6,7 @@ const SignupPage: React.FC = () => {
   const navigate = useNavigate()
   const [step, setStep] = useState<'method' | 'email-form'>('method')
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     username: '',
     password: '',
@@ -24,6 +25,11 @@ const SignupPage: React.FC = () => {
     setError('')
 
     // Validation
+    if (formData.fullName.trim().length < 2) {
+      setError('Full name must be at least 2 characters')
+      return
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
       return
@@ -45,13 +51,14 @@ const SignupPage: React.FC = () => {
       const { error } = await signUpWithEmail(
         formData.email,
         formData.password,
-        formData.username
+        formData.username,
+        formData.fullName
       )
       
       if (error) throw error
       
-      // Redirect to OTP verification
-      navigate('/verify-otp', { state: { email: formData.email } })
+      // Redirect to email verification message
+      navigate('/verify-email', { state: { email: formData.email } })
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
     } finally {
@@ -80,43 +87,92 @@ const SignupPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-            <svg className="w-7 h-7 text-dark" fill="currentColor" viewBox="0 0 24 24">
+    <div className="min-h-screen bg-dark flex">
+      {/* Left Side - Heading */}
+      <div className="hidden lg:flex lg:w-1/2 bg-dark-light flex-col justify-center px-12">
+        <Link to="/" className="flex items-center gap-2 mb-8">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+            <svg className="w-6 h-6 text-dark" fill="currentColor" viewBox="0 0 24 24">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white">Rinth</h1>
+          <h1 className="text-2xl font-bold text-white">Rinth</h1>
         </Link>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Create Your Account</h2>
-          <p className="text-gray-400">Join the community and start building</p>
+        
+        <div className="animate-fade-in">
+          <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
+            Create Your<br />Account
+          </h2>
+          <p className="text-base text-gray-400 mb-6 leading-relaxed">
+            Join thousands of developers building amazing projects with AI-powered tools
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <span>AI-powered project generation</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <span>Save and manage project history</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span>Share with the community</span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-6 overflow-y-auto">
+        <div className="w-full max-w-md animate-fade-in my-auto">
+          {/* Mobile Logo */}
+          <Link to="/" className="lg:hidden flex items-center justify-center gap-2 mb-4">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-dark" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-white">Rinth</h1>
+          </Link>
+
+          {/* Mobile Header */}
+          <div className="text-center lg:text-left mb-4 lg:hidden">
+            <h2 className="text-xl font-bold text-white mb-1">Create Your Account</h2>
+            <p className="text-sm text-gray-400">Join and start building</p>
+          </div>
 
         {/* Main Card */}
-        <div className="bg-dark-light rounded-2xl border border-dark-lighter p-8">
+        <div className="bg-dark-light rounded-xl border border-dark-lighter p-6">
           {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-xl px-4 py-3 flex items-center gap-3">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-4 bg-red-500/10 border border-red-500/50 rounded-lg px-3 py-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-red-400 text-sm">{error}</span>
+              <span className="text-red-400 text-xs">{error}</span>
             </div>
           )}
 
           {step === 'method' ? (
             <>
               {/* OAuth Buttons */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-4">
                 <button
                   onClick={handleGoogleSignup}
-                  className="w-full bg-dark border border-dark-lighter hover:border-primary/50 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-3"
+                  className="w-full bg-dark border border-dark-lighter hover:border-primary/50 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -129,7 +185,7 @@ const SignupPage: React.FC = () => {
 
                 <button
                   onClick={handleGithubSignup}
-                  className="w-full bg-dark border border-dark-lighter hover:border-primary/50 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-3"
+                  className="w-full bg-dark border border-dark-lighter hover:border-primary/50 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -139,19 +195,19 @@ const SignupPage: React.FC = () => {
               </div>
 
               {/* Divider */}
-              <div className="relative my-6">
+              <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-dark-lighter"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-dark-light text-gray-500">Or sign up with email</span>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-3 bg-dark-light text-gray-500">Or sign up with email</span>
                 </div>
               </div>
 
               {/* Email Button */}
               <button
                 onClick={() => setStep('email-form')}
-                className="w-full bg-primary text-dark font-bold py-3 rounded-xl hover:bg-primary-light transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-primary text-dark text-sm font-bold py-2 rounded-lg hover:bg-primary-light transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -173,9 +229,24 @@ const SignupPage: React.FC = () => {
               </button>
 
               {/* Email Signup Form */}
-              <form onSubmit={handleEmailSignup} className="space-y-4">
+              <form onSubmit={handleEmailSignup} className="space-y-3">
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">
+                  <label className="block text-white text-xs font-medium mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter your full name"
+                    className="w-full bg-dark border border-dark-lighter rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white text-xs font-medium mb-1">
                     Email Address *
                   </label>
                   <input
@@ -185,12 +256,12 @@ const SignupPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     placeholder="your.email@example.com"
-                    className="w-full bg-dark border border-dark-lighter rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-dark border border-dark-lighter rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">
+                  <label className="block text-white text-xs font-medium mb-1">
                     Username *
                   </label>
                   <input
@@ -200,13 +271,12 @@ const SignupPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     placeholder="Choose a unique username"
-                    className="w-full bg-dark border border-dark-lighter rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-dark border border-dark-lighter rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
                   />
-                  <p className="text-gray-500 text-xs mt-1">At least 3 characters</p>
                 </div>
 
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">
+                  <label className="block text-white text-xs font-medium mb-1">
                     Password *
                   </label>
                   <input
@@ -216,13 +286,12 @@ const SignupPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     placeholder="Create a strong password"
-                    className="w-full bg-dark border border-dark-lighter rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-dark border border-dark-lighter rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
                   />
-                  <p className="text-gray-500 text-xs mt-1">At least 6 characters</p>
                 </div>
 
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">
+                  <label className="block text-white text-xs font-medium mb-1">
                     Confirm Password *
                   </label>
                   <input
@@ -232,15 +301,15 @@ const SignupPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     placeholder="Re-enter your password"
-                    className="w-full bg-dark border border-dark-lighter rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-dark border border-dark-lighter rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <input type="checkbox" required className="w-4 h-4 mt-1 rounded bg-dark border-dark-lighter" />
-                  <label className="text-gray-400 text-sm">
+                  <input type="checkbox" required className="w-3 h-3 mt-0.5 rounded bg-dark border-dark-lighter" />
+                  <label className="text-gray-400 text-xs">
                     I agree to the{' '}
-                    <a href="#" className="text-primary hover:text-primary-light">Terms of Service</a>
+                    <a href="#" className="text-primary hover:text-primary-light">Terms</a>
                     {' '}and{' '}
                     <a href="#" className="text-primary hover:text-primary-light">Privacy Policy</a>
                   </label>
@@ -249,7 +318,7 @@ const SignupPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-primary text-dark font-bold py-3 rounded-xl hover:bg-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-primary text-dark text-sm font-bold py-2 rounded-lg hover:bg-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <>
@@ -266,7 +335,7 @@ const SignupPage: React.FC = () => {
         </div>
 
         {/* Login Link */}
-        <p className="text-center text-gray-400 mt-6">
+        <p className="text-center text-gray-400 text-sm mt-3">
           Already have an account?{' '}
           <Link to="/login" className="text-primary hover:text-primary-light font-semibold transition-colors">
             Sign in
@@ -276,13 +345,14 @@ const SignupPage: React.FC = () => {
         {/* Back to Home */}
         <Link 
           to="/" 
-          className="flex items-center justify-center gap-2 text-gray-500 hover:text-primary transition-colors mt-6"
+          className="flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors mt-2"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Home
         </Link>
+        </div>
       </div>
     </div>
   )

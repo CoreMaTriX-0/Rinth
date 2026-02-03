@@ -18,7 +18,7 @@ function App() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/verify-otp" element={<VerifyOTPPage />} />
+        <Route path="/verify-email" element={<VerifyOTPPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Routes>
     </Router>
