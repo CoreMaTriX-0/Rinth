@@ -73,11 +73,11 @@ const HistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-dark">
-      <Header />
+      <Header user={user} />
       
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Project History</h1>
             <p className="text-gray-400">Your previously generated projects</p>
