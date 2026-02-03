@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase'
 const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [_isProcessing, setIsProcessing] = useState(true)
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -35,7 +34,6 @@ const AuthCallbackPage: React.FC = () => {
         if (session && session.user) {
           console.log('User authenticated:', session.user.email)
           // Successfully authenticated, redirect to home
-          setIsProcessing(false)
           setTimeout(() => {
             navigate('/', { replace: true })
           }, 500)
@@ -46,7 +44,6 @@ const AuthCallbackPage: React.FC = () => {
       } catch (err: any) {
         console.error('Auth callback error:', err)
         setError(err.message || 'Authentication failed')
-        setIsProcessing(false)
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login', { replace: true })

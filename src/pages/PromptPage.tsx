@@ -6,14 +6,12 @@ import { supabase } from '../lib/supabase'
 
 const PromptPage: React.FC = () => {
   const [user, setUser] = useState<any>(null)
-  const [_isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check current auth state
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
-      setIsLoading(false)
       console.log('Current user on home page:', session?.user?.email || 'Not logged in')
     }
 
