@@ -146,7 +146,24 @@ const ResponsePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [newPrompt, setNewPrompt] = useState('')
+  const [isRefining, setIsRefining] = useState(false)
   const prompt = location.state?.prompt || "Build a line-following robot"
+
+  const handleRefinePrompt = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPrompt.trim()) return
+
+    setIsRefining(true)
+    
+    // Simulate API call - in real app, this would call Gemini API with the refined prompt
+    setTimeout(() => {
+      // Navigate to response page with the new refined prompt
+      navigate('/response', { state: { prompt: newPrompt } })
+      setIsRefining(false)
+      setNewPrompt('')
+    }, 1500)
+  }
 
   useEffect(() => {
     // Check current auth state
@@ -254,17 +271,24 @@ const ResponsePage: React.FC = () => {
             </div>
           )}
           
-          {/* User Prompt Display */}
-          <div className="mb-8 animate-fade-in">
-            <div className="inline-flex items-center gap-2 text-gray-500 text-sm mb-2">
+          {/* Top Action Bar */}
+          <div className="flex items-center justify-between mb-8 animate-fade-in">
+            <div className="flex items-center gap-2 text-gray-500 text-sm">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
-              Your prompt
+              <span>Your prompt:</span>
+              <span className="text-white font-medium">"{prompt}"</span>
             </div>
-            <p className="text-white text-sm bg-dark-light rounded-lg px-3 py-2 border border-dark-lighter inline-block">
-              "{prompt}"
-            </p>
+            <button 
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 bg-dark-light border border-dark-lighter text-white px-4 py-2 rounded-lg text-sm font-medium hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Project
+            </button>
           </div>
 
           {/* Main Content Grid */}
@@ -309,20 +333,62 @@ const ResponsePage: React.FC = () => {
                 code={mockProjectData.code}
                 buyLinks={mockProjectData.buyLinks}
               />
-            </div>
-          </div>
+              
+              {/* Refine Prompt Section */}
+              <div className="mt-8 animate-fade-in">
+                <form onSubmit={handleRefinePrompt} className="relative">
+                  <textarea
+                    value={newPrompt}
+                    onChange={(e) => setNewPrompt(e.target.value)}
+                    placeholder={`Type a refined version of your prompt here...`}
+                    className="w-full bg-dark-light text-white rounded-xl px-4 py-3 pr-14 border border-dark-lighter focus:border-primary focus:outline-none resize-none transition-colors"
+                    rows={3}
+                    disabled={isRefining}
+                  />
+                  
+                  <button
+                    type="submit"
+                    disabled={!newPrompt.trim() || isRefining}
+                    className="absolute bottom-3 right-3 bg-primary text-dark p-2.5 rounded-lg hover:bg-primary-light transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    {isRefining ? (
+                      <div className="w-5 h-5 border-2 border-dark border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </button>
+                </form>
 
-          {/* New Project Button */}
-          <div className="mt-12 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <button 
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-primary transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Start a new project
-            </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setNewPrompt(`${prompt} with wireless connectivity`)}
+                    className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
+                  >
+                    + Wireless
+                  </button>
+                  <button
+                    onClick={() => setNewPrompt(`${prompt} for beginners`)}
+                    className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
+                  >
+                    + Easier
+                  </button>
+                  <button
+                    onClick={() => setNewPrompt(`${prompt} with advanced features`)}
+                    className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
+                  >
+                    + Advanced
+                  </button>
+                  <button
+                    onClick={() => setNewPrompt(`${prompt} on a budget`)}
+                    className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
+                  >
+                    + Budget
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
