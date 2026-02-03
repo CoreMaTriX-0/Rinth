@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import VerifyOTPPage from './pages/VerifyOTPPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
+import HistoryPage from './pages/HistoryPage'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<PromptPage />} />
         <Route path="/response" element={<ResponsePage />} />
         <Route path="/community" element={<CommunityPage />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />

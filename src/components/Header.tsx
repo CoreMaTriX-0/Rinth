@@ -44,11 +44,11 @@ const Header: React.FC<HeaderProps> = ({ showBack = false, user = null }) => {
             </Link>
           )}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-dark" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
+            <img 
+              src="/Logo.png" 
+              alt="Rinth Logo" 
+              className="w-10 h-10 object-contain"
+            />
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Rinth
             </h1>
@@ -61,6 +61,14 @@ const Header: React.FC<HeaderProps> = ({ showBack = false, user = null }) => {
             </svg>
             Community
           </Link>
+          {user && (
+            <Link to="/history" className="text-gray-400 hover:text-primary transition-colors text-sm flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History
+            </Link>
+          )}
           <a href="#" className="text-gray-400 hover:text-primary transition-colors text-sm">
             About
           </a>

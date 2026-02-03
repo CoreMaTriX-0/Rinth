@@ -262,7 +262,7 @@ const ResponsePage: React.FC = () => {
               </svg>
               Your prompt
             </div>
-            <p className="text-white text-lg bg-dark-light rounded-xl px-5 py-3 border border-dark-lighter inline-block">
+            <p className="text-white text-sm bg-dark-light rounded-lg px-3 py-2 border border-dark-lighter inline-block">
               "{prompt}"
             </p>
           </div>

@@ -446,6 +446,108 @@ CREATE POLICY "Users can unfollow others"
 -- FUNCTION TO CREATE PROFILE ON SIGNUP
 -- =============================================
 
+-- =============================================
+-- 8. PROJECT HISTORY TABLE
+-- Stores user's generated project history with images
+-- =============================================
+
+CREATE TABLE public.project_history (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    prompt TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    difficulty TEXT CHECK (difficulty IN ('Beginner', 'Intermediate', 'Advanced')),
+    estimated_cost TEXT,
+    estimated_time TEXT,
+    tags TEXT[] DEFAULT '{}',
+    
+    -- AI-generated content stored as JSON
+    instructions JSONB,
+    components JSONB,
+    code_blocks JSONB,
+    buy_links JSONB,
+    
+    -- Metadata
+    is_favorite BOOLEAN DEFAULT false,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create indexes for project history
+CREATE INDEX idx_project_history_user_id ON public.project_history(user_id);
+CREATE INDEX idx_project_history_created_at ON public.project_history(created_at DESC);
+CREATE INDEX idx_project_history_is_favorite ON public.project_history(is_favorite);
+
+-- Enable RLS for project history
+ALTER TABLE public.project_history ENABLE ROW LEVEL SECURITY;
+
+-- PROJECT HISTORY POLICIES
+CREATE POLICY "Users can view own project history" 
+    ON public.project_history FOR SELECT 
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own project history" 
+    ON public.project_history FOR INSERT 
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own project history" 
+    ON public.project_history FOR UPDATE 
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own project history" 
+    ON public.project_history FOR DELETE 
+    USING (auth.uid() = user_id);
+
+-- Trigger for updated_at
+CREATE TRIGGER update_project_history_updated_at BEFORE UPDATE ON public.project_history
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =============================================
+-- STORAGE BUCKET FOR PROJECT IMAGES
+-- Run this in Supabase SQL Editor
+-- =============================================
+
+-- Create storage bucket for project images
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'project-images',
+    'project-images',
+    true,
+    5242880, -- 5MB limit
+    ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+) ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for project images
+CREATE POLICY "Anyone can view project images"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'project-images');
+
+CREATE POLICY "Authenticated users can upload project images"
+    ON storage.objects FOR INSERT
+    WITH CHECK (
+        bucket_id = 'project-images' 
+        AND auth.role() = 'authenticated'
+    );
+
+CREATE POLICY "Users can update own project images"
+    ON storage.objects FOR UPDATE
+    USING (
+        bucket_id = 'project-images' 
+        AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+
+CREATE POLICY "Users can delete own project images"
+    ON storage.objects FOR DELETE
+    USING (
+        bucket_id = 'project-images' 
+        AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+
+-- =============================================
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN

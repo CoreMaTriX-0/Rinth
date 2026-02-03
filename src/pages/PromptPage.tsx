@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 
 const PromptPage: React.FC = () => {
   const [user, setUser] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [_isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check current auth state
@@ -55,25 +55,6 @@ const PromptPage: React.FC = () => {
 
         {/* Prompt Input */}
         <PromptInput />
-
-        {/* Features */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl w-full animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          {[
-            { icon: '📋', title: 'Step-by-Step', desc: 'Clear instructions' },
-            { icon: '🔧', title: 'Components', desc: 'Full parts list' },
-            { icon: '💻', title: 'Code Ready', desc: 'Copy-paste code' },
-            { icon: '🛒', title: 'Buy Links', desc: 'Direct purchase' },
-          ].map((feature, index) => (
-            <div 
-              key={index}
-              className="bg-dark-light border border-dark-lighter rounded-xl p-5 text-center hover:border-primary/50 transition-colors"
-            >
-              <span className="text-3xl mb-3 block">{feature.icon}</span>
-              <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
-              <p className="text-gray-500 text-sm">{feature.desc}</p>
-            </div>
-          ))}
-        </div>
 
         {/* Community CTA */}
         <div className="mt-12 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>

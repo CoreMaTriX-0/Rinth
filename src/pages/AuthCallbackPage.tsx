@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [isProcessing, setIsProcessing] = useState(true)
+  const [_isProcessing, setIsProcessing] = useState(true)
 
   useEffect(() => {
     const handleAuthCallback = async () => {
