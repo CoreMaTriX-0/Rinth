@@ -6,8 +6,10 @@ import ProjectDescription from '../components/ProjectDescription'
 import TabsContainer from '../components/TabsContainer'
 import { supabase } from '../lib/supabase'
 import jsPDF from 'jspdf'
+import { EngineeringProject } from '../services/types'
+import { GeminiService } from '../services/geminiService'
 
-// Mock data - in real app, this would come from Gemini API
+// Fallback mock data - only used if no project data provided
 const mockProjectData = {
   title: "Smart Line Following Robot",
   description: "Build an intelligent robot that can follow a line path using infrared sensors and Arduino. This project combines basic electronics, programming, and mechanical assembly to create an autonomous robot that can navigate predefined tracks. Perfect for learning about sensor integration, motor control, and PID algorithms.",
@@ -149,24 +151,50 @@ const ResponsePage: React.FC = () => {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [newPrompt, setNewPrompt] = useState('')
   const [isRefining, setIsRefining] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [chatHistory, setChatHistory] = useState<Array<{role: string, text: string}>>([])
   const prompt = location.state?.prompt || "Build a line-following robot"
+  const projectData: EngineeringProject | null = location.state?.project || null
 
   const handleRefinePrompt = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newPrompt.trim()) return
+    if (!newPrompt.trim() || !projectData) return
 
+    const userMessage = newPrompt.trim()
     setIsRefining(true)
+    setError(null)
     
-    // Simulate API call - in real app, this would call Gemini API with the refined prompt
-    setTimeout(() => {
-      // Navigate to response page with the new refined prompt
-      navigate('/response', { state: { prompt: newPrompt } })
+    // Add user message to chat history immediately
+    const newHistory = [...chatHistory, { role: 'User', text: userMessage }]
+    setChatHistory(newHistory)
+    setNewPrompt('')
+    
+    try {
+      // Get GeminiService instance (uses Puter.js for free AI access)
+      const geminiService = await GeminiService.getInstance()
+      
+      // Use chat method instead of generating a new project
+      const assistantResponse = await geminiService.chatWithProject(
+        projectData, 
+        userMessage, 
+        chatHistory
+      )
+      
+      // Add assistant response to chat history
+      setChatHistory([...newHistory, { role: 'Assistant', text: assistantResponse }])
       setIsRefining(false)
-      setNewPrompt('')
-    }, 1500)
+    } catch (err) {
+      console.error('Error in chat:', err)
+      setError(err instanceof Error ? err.message : 'Failed to get response. Please try again.')
+      setIsRefining(false)
+      // Remove the user message from history if failed
+      setChatHistory(chatHistory)
+    }
   }
 
   const handleDownloadPDF = () => {
+    if (!projectData) return
+    
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
@@ -234,14 +262,14 @@ const ResponsePage: React.FC = () => {
     doc.setTextColor(...colors.white)
     doc.setFontSize(24)
     doc.setFont('helvetica', 'bold')
-    const titleLines = doc.splitTextToSize(mockProjectData.title, contentWidth)
+    const titleLines = doc.splitTextToSize(projectData.title, contentWidth)
     doc.text(titleLines, margin, yPos)
     yPos += titleLines.length * 10 + 5
 
     // Tags
     let tagX = margin
     doc.setFontSize(8)
-    mockProjectData.tags.forEach((tag) => {
+    projectData.tags.forEach((tag) => {
       const tagWidth = doc.getTextWidth(tag) + 10
       if (tagX + tagWidth > pageWidth - margin) {
         tagX = margin
@@ -272,7 +300,7 @@ const ResponsePage: React.FC = () => {
     doc.setTextColor(...colors.white)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    const descLines = doc.splitTextToSize(mockProjectData.description, contentWidth - 10)
+    const descLines = doc.splitTextToSize(projectData.description, contentWidth - 10)
     descLines.forEach((line: string) => {
       checkNewPage(7)
       doc.text(line, margin + 5, yPos)
@@ -282,7 +310,7 @@ const ResponsePage: React.FC = () => {
 
     // Instructions Section
     drawSectionHeader('📋 INSTRUCTIONS')
-    mockProjectData.instructions.forEach((instruction, index) => {
+    projectData.instructions.forEach((instruction, index) => {
       checkNewPage(20)
       // Step number circle
       doc.setFillColor(...colors.primary)
@@ -296,7 +324,7 @@ const ResponsePage: React.FC = () => {
       doc.setTextColor(...colors.white)
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      const instrLines = doc.splitTextToSize(instruction, contentWidth - 25)
+      const instrLines = doc.splitTextToSize(instruction.description, contentWidth - 25)
       instrLines.forEach((line: string, lineIndex: number) => {
         checkNewPage(6)
         doc.text(line, margin + 18, yPos + (lineIndex * 5))
@@ -319,7 +347,7 @@ const ResponsePage: React.FC = () => {
     yPos += 10
 
     // Table rows
-    mockProjectData.components.forEach((comp, index) => {
+    projectData.components.forEach((comp, index) => {
       checkNewPage(10)
       if (index % 2 === 0) {
         doc.setFillColor(35, 35, 35)
@@ -330,16 +358,17 @@ const ResponsePage: React.FC = () => {
       doc.setFont('helvetica', 'normal')
       doc.text(comp.name.substring(0, 25), margin + 5, yPos + 4)
       doc.setTextColor(...colors.primary)
-      doc.text(`x${comp.quantity}`, margin + 80, yPos + 4)
+      doc.text('x1', margin + 80, yPos + 4)
       doc.setTextColor(...colors.gray)
-      doc.text(comp.description.substring(0, 35), margin + 100, yPos + 4)
+      doc.text(comp.purpose.substring(0, 35), margin + 100, yPos + 4)
       yPos += 8
     })
     yPos += 10
 
     // Code Section
     drawSectionHeader('💻 CODE')
-    mockProjectData.code.forEach((codeBlock) => {
+    const codeArray = Array.isArray(projectData.code) ? projectData.code : [projectData.code]
+    codeArray.forEach((codeBlock) => {
       checkNewPage(30)
       // Filename header
       doc.setFillColor(30, 30, 30)
@@ -347,14 +376,15 @@ const ResponsePage: React.FC = () => {
       doc.setTextColor(...colors.green)
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
-      doc.text(`📄 ${codeBlock.filename}`, margin + 5, yPos + 7)
+      const filename = `code.${codeBlock.language.toLowerCase()}`
+      doc.text(`📄 ${filename}`, margin + 5, yPos + 7)
       doc.setTextColor(...colors.gray)
       doc.text(codeBlock.language, pageWidth - margin - 20, yPos + 7)
       yPos += 12
 
       // Code content (first 30 lines)
       doc.setFillColor(20, 20, 20)
-      const codeLines = codeBlock.code.split('\n').slice(0, 30)
+      const codeLines = codeBlock.content.split('\n').slice(0, 30)
       const codeHeight = Math.min(codeLines.length * 4 + 6, 80)
       checkNewPage(codeHeight)
       doc.roundedRect(margin, yPos, contentWidth, codeHeight, 2, 2, 'F')
@@ -362,7 +392,7 @@ const ResponsePage: React.FC = () => {
       doc.setTextColor(...colors.gray)
       doc.setFontSize(6)
       doc.setFont('courier', 'normal')
-      codeLines.forEach((line, i) => {
+      codeLines.forEach((line: string, i: number) => {
         if (yPos + (i * 4) + 4 < pageHeight - margin) {
           const truncatedLine = line.substring(0, 80)
           doc.text(truncatedLine, margin + 5, yPos + 4 + (i * 4))
@@ -383,7 +413,7 @@ const ResponsePage: React.FC = () => {
     doc.text(new Date().toLocaleDateString(), pageWidth - margin - 25, yPos)
 
     // Save the PDF
-    doc.save(`${mockProjectData.title.replace(/\s+/g, '_')}_project.pdf`)
+    doc.save(`${projectData.title.replace(/\s+/g, '_')}_project.pdf`)
   }
 
   useEffect(() => {
@@ -513,17 +543,18 @@ const ResponsePage: React.FC = () => {
           </div>
 
           {/* Main Content Grid */}
+          {projectData ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Side - Image and Description */}
             <div>
               <ProjectImage 
-                imageUrl={mockProjectData.imageUrl} 
-                projectName={mockProjectData.title} 
+                imageUrl={projectData.imageUrl || mockProjectData.imageUrl} 
+                projectName={projectData.title} 
               />
               <ProjectDescription 
-                title={mockProjectData.title}
-                description={mockProjectData.description}
-                tags={mockProjectData.tags}
+                title={projectData.title}
+                description={projectData.description}
+                tags={projectData.tags}
               />
               
               {/* Action Buttons */}
@@ -552,19 +583,66 @@ const ResponsePage: React.FC = () => {
             {/* Right Side - Tabs */}
             <div>
               <TabsContainer 
-                instructions={mockProjectData.instructions}
-                components={mockProjectData.components}
-                code={mockProjectData.code}
-                buyLinks={mockProjectData.buyLinks}
+                instructions={projectData.instructions}
+                components={projectData.components}
+                code={Array.isArray(projectData.code) ? projectData.code : [projectData.code]}
+                buyLinks={projectData.buyingLinks || []}
               />
               
-              {/* Refine Prompt Section */}
+              {/* Project Assistant Chat Section */}
               <div className="mt-8 animate-fade-in">
+                <div className="mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white">Project Assistant</h3>
+                </div>
+                
+                {/* Chat History */}
+                {chatHistory.length > 0 && (
+                  <div className="mb-4 space-y-3 max-h-96 overflow-y-auto">
+                    {chatHistory.map((msg, idx) => (
+                      <div key={idx} className={`p-4 rounded-lg ${
+                        msg.role === 'User' 
+                          ? 'bg-primary/10 border border-primary/30 ml-8' 
+                          : 'bg-dark-lighter border border-dark-lighter mr-8'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            msg.role === 'User' ? 'bg-primary text-dark' : 'bg-primary/20 text-primary'
+                          }`}>
+                            {msg.role === 'User' ? (
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-400 mb-1">{msg.role}</div>
+                            <div className="text-white whitespace-pre-wrap">{msg.text}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400">
+                    {error}
+                  </div>
+                )}
+                
                 <form onSubmit={handleRefinePrompt} className="relative">
                   <textarea
                     value={newPrompt}
                     onChange={(e) => setNewPrompt(e.target.value)}
-                    placeholder={`Type a refined version of your prompt here...`}
+                    placeholder="Ask about components, steps, alternatives, or troubleshooting..."
                     className="w-full bg-dark-light text-white rounded-xl px-4 py-3 pr-14 border border-dark-lighter focus:border-primary focus:outline-none resize-none transition-colors"
                     rows={3}
                     disabled={isRefining}
@@ -579,7 +657,7 @@ const ResponsePage: React.FC = () => {
                       <div className="w-5 h-5 border-2 border-dark border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <svg className="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                     )}
                   </button>
@@ -587,33 +665,39 @@ const ResponsePage: React.FC = () => {
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => setNewPrompt(`${prompt} with wireless connectivity`)}
+                    onClick={() => setNewPrompt("What can I use instead of this component?")}
                     className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
                   >
-                    + Wireless
+                    💡 Alternatives
                   </button>
                   <button
-                    onClick={() => setNewPrompt(`${prompt} for beginners`)}
+                    onClick={() => setNewPrompt("How do I troubleshoot if it doesn't work?")}
                     className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
                   >
-                    + Easier
+                    🔧 Troubleshoot
                   </button>
                   <button
-                    onClick={() => setNewPrompt(`${prompt} with advanced features`)}
+                    onClick={() => setNewPrompt("Can you explain step 1 in more detail?")}
                     className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
                   >
-                    + Advanced
+                    📖 Explain Steps
                   </button>
                   <button
-                    onClick={() => setNewPrompt(`${prompt} on a budget`)}
+                    onClick={() => setNewPrompt("Where's the best place to buy these components?")}
                     className="text-xs bg-dark-light px-3 py-1.5 rounded-lg text-gray-400 hover:text-primary hover:border-primary/50 border border-dark-lighter transition-colors"
                   >
-                    + Budget
+                    🛒 Where to Buy
                   </button>
                 </div>
               </div>
             </div>
           </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-400">Loading project data...</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

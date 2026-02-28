@@ -1,31 +1,13 @@
 import { useState } from 'react'
+import { Component, InstructionStep, ProjectCode, GroundingSource } from '../services/types'
 
 type TabType = 'instructions' | 'components' | 'code' | 'buylinks'
 
 interface TabsContainerProps {
-  instructions: string[]
+  instructions: InstructionStep[]
   components: Component[]
-  code: CodeBlock[]
-  buyLinks: BuyLink[]
-}
-
-interface Component {
-  name: string
-  quantity: number
-  description: string
-}
-
-interface CodeBlock {
-  language: string
-  filename: string
-  code: string
-}
-
-interface BuyLink {
-  component: string
-  store: string
-  url: string
-  price: string
+  code: ProjectCode[]
+  buyLinks: GroundingSource[]
 }
 
 const TabsContainer: React.FC<TabsContainerProps> = ({
@@ -88,14 +70,14 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
 }
 
 // Instructions Tab
-const InstructionsTab: React.FC<{ instructions: string[] }> = ({ instructions }) => (
+const InstructionsTab: React.FC<{ instructions: InstructionStep[] }> = ({ instructions }) => (
   <div className="tab-content space-y-4">
     {instructions.map((instruction, index) => (
-      <div key={index} className="flex gap-4 items-start">
+      <div key={instruction.step || index} className="flex gap-4 items-start">
         <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-primary font-bold text-sm">{index + 1}</span>
+          <span className="text-primary font-bold text-sm">{instruction.step || index + 1}</span>
         </div>
-        <p className="text-gray-300 text-sm leading-relaxed pt-1">{instruction}</p>
+        <p className="text-gray-300 text-sm leading-relaxed pt-1">{instruction.description}</p>
       </div>
     ))}
   </div>
@@ -106,15 +88,15 @@ const ComponentsTab: React.FC<{ components: Component[] }> = ({ components }) =>
   <div className="tab-content space-y-3">
     {components.map((component, index) => (
       <div 
-        key={index} 
+        key={component.name + index} 
         className="flex items-center justify-between p-4 bg-dark rounded-xl border border-dark-lighter hover:border-primary/30 transition-colors"
       >
         <div className="flex-1">
           <h4 className="text-white font-medium">{component.name}</h4>
-          <p className="text-gray-500 text-sm mt-1">{component.description}</p>
+          <p className="text-gray-500 text-sm mt-1">{component.purpose}</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
-          <span className="text-primary font-bold">×{component.quantity}</span>
+          <span className="text-primary font-bold">×1</span>
         </div>
       </div>
     ))}
@@ -122,7 +104,7 @@ const ComponentsTab: React.FC<{ components: Component[] }> = ({ components }) =>
 )
 
 // Code Tab
-const CodeTab: React.FC<{ codeBlocks: CodeBlock[] }> = ({ codeBlocks }) => {
+const CodeTab: React.FC<{ codeBlocks: ProjectCode[] }> = ({ codeBlocks }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   const copyToClipboard = (code: string, index: number) => {
@@ -134,14 +116,14 @@ const CodeTab: React.FC<{ codeBlocks: CodeBlock[] }> = ({ codeBlocks }) => {
   return (
     <div className="tab-content space-y-4">
       {codeBlocks.map((block, index) => (
-        <div key={index} className="rounded-xl overflow-hidden border border-dark-lighter">
+        <div key={`code-${block.language}-${index}`} className="rounded-xl overflow-hidden border border-dark-lighter">
           <div className="flex items-center justify-between px-4 py-2 bg-dark-lighter">
             <div className="flex items-center gap-2">
-              <span className="text-primary text-sm font-medium">{block.filename}</span>
+              <span className="text-primary text-sm font-medium">code.{block.language.toLowerCase()}</span>
               <span className="text-gray-600 text-xs">({block.language})</span>
             </div>
             <button
-              onClick={() => copyToClipboard(block.code, index)}
+              onClick={() => copyToClipboard(block.content, index)}
               className="text-gray-500 hover:text-primary transition-colors"
             >
               {copiedIndex === index ? (
@@ -156,7 +138,7 @@ const CodeTab: React.FC<{ codeBlocks: CodeBlock[] }> = ({ codeBlocks }) => {
             </button>
           </div>
           <pre className="p-4 bg-dark overflow-x-auto">
-            <code className="text-sm text-gray-300 font-mono">{block.code}</code>
+            <code className="text-sm text-gray-300 font-mono">{block.content}</code>
           </pre>
         </div>
       ))}
@@ -165,30 +147,33 @@ const CodeTab: React.FC<{ codeBlocks: CodeBlock[] }> = ({ codeBlocks }) => {
 }
 
 // Buy Links Tab
-const BuyLinksTab: React.FC<{ links: BuyLink[] }> = ({ links }) => (
+const BuyLinksTab: React.FC<{ links: GroundingSource[] }> = ({ links }) => (
   <div className="tab-content space-y-3">
-    {links.map((link, index) => (
-      <a
-        key={index}
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-between p-4 bg-dark rounded-xl border border-dark-lighter hover:border-primary/50 transition-all group"
-      >
-        <div>
-          <h4 className="text-white font-medium group-hover:text-primary transition-colors">
-            {link.component}
-          </h4>
-          <p className="text-gray-500 text-sm mt-1">{link.store}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-primary font-bold">{link.price}</span>
-          <svg className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </div>
-      </a>
-    ))}
+    {links.length === 0 ? (
+      <p className="text-gray-500 text-center py-8">No buying links available yet.</p>
+    ) : (
+      links.map((link, index) => (
+        <a
+          key={`link-${link.uri}-${index}`}
+          href={link.uri}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-4 bg-dark rounded-xl border border-dark-lighter hover:border-primary/50 transition-all group"
+        >
+          <div>
+            <h4 className="text-white font-medium group-hover:text-primary transition-colors">
+              {link.title}
+            </h4>
+            <p className="text-gray-500 text-sm mt-1">{link.uri}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </div>
+        </a>
+      ))
+    )}
   </div>
 )
 
