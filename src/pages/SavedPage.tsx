@@ -128,6 +128,7 @@ const SavedPage: React.FC = () => {
         instructions: project.instructions,
         code_blocks: project.code ? [project.code] : [],
         image_url: post.image_url ?? undefined,
+        source_community_post_id: post.id,
       })
 
       updateCardState(post.id, { isGenerating: false, success: true, modifyPrompt: '' })

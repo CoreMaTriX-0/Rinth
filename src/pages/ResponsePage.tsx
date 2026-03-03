@@ -1,11 +1,11 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import ProjectImage from '../components/ProjectImage'
 import ProjectDescription from '../components/ProjectDescription'
 import TabsContainer from '../components/TabsContainer'
 import ShareModal from '../components/ShareModal'
-import { supabase, saveProjectToHistory } from '../lib/supabase'
+import { supabase, saveProjectToHistory, getProjectFromHistory } from '../lib/supabase'
 import jsPDF from 'jspdf'
 import { EngineeringProject } from '../services/types'
 import { GeminiService } from '../services/geminiService'
@@ -147,17 +147,22 @@ void moveMotors(int left, int right) {
 const ResponsePage: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const historyId = searchParams.get('historyId')
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const savedToHistoryRef = useRef(false)
+  // For history views the project is already saved — skip the auto-save
+  const savedToHistoryRef = useRef(!!historyId)
   const [newPrompt, setNewPrompt] = useState('')
   const [isRefining, setIsRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatHistory, setChatHistory] = useState<Array<{role: string, text: string}>>([])
-  const prompt = location.state?.prompt || "Build a line-following robot"
-  const projectData: EngineeringProject | null = location.state?.project || null
+  const [loadedProject, setLoadedProject] = useState<EngineeringProject | null>(null)
+  const [loadedPrompt, setLoadedPrompt] = useState<string | null>(null)
+  const prompt = loadedPrompt || location.state?.prompt || 'Untitled Project'
+  const projectData: EngineeringProject | null = loadedProject || location.state?.project || null
 
   const handleRefinePrompt = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -450,12 +455,33 @@ const ResponsePage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => {
+    if (!historyId) {
+      // Fresh project passed via navigation state — brief cosmetic delay
+      const timer = setTimeout(() => setIsLoading(false), 800)
+      return () => clearTimeout(timer)
+    }
+
+    // Load existing project from history
+    getProjectFromHistory(historyId).then(({ data, error }) => {
+      if (data && !error) {
+        setLoadedPrompt(data.prompt)
+        setLoadedProject({
+          title: data.title,
+          description: data.description ?? '',
+          difficulty: data.difficulty ?? 'Beginner',
+          estimatedTime: data.estimated_time ?? '',
+          estimatedCost: data.estimated_cost ?? '',
+          tags: data.tags ?? [],
+          components: (data.components ?? []) as any,
+          instructions: (data.instructions ?? []) as any,
+          code: (data.code_blocks?.[0] ?? { language: 'Arduino', content: '' }) as any,
+          imageUrl: data.image_url,
+          buyingLinks: (data.buy_links ?? []) as any,
+        })
+      }
       setIsLoading(false)
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [])
+    })
+  }, [historyId])
 
   // Auto-save to history once when project is ready and user is logged in
   useEffect(() => {

@@ -98,6 +98,7 @@ export interface ProjectHistoryItem {
   code_blocks?: any[]
   buy_links?: any[]
   is_favorite?: boolean
+  source_community_post_id?: string
   created_at?: string
   updated_at?: string
 }
@@ -276,10 +277,10 @@ export const getCommunityPosts = async (limit = 30, offset = 0) => {
 
   if (error) return { data: null, error }
 
-  // Flatten the nested count into comments_count
+  // Flatten the nested count into comments_count (count may come back as string from Supabase)
   const posts = ((data as any[]) ?? []).map(post => ({
     ...post,
-    comments_count: (post.post_comments as { count: number }[] | null)?.[0]?.count ?? post.comments_count ?? 0,
+    comments_count: Number((post.post_comments as { count: number | string }[] | null)?.[0]?.count ?? post.comments_count ?? 0),
     post_comments: undefined,
   })) as CommunityPostItem[]
 
