@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import ProjectImage from '../components/ProjectImage'
