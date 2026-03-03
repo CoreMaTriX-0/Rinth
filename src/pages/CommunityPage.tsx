@@ -48,6 +48,36 @@ const CommunityPage: React.FC = () => {
       setIsLoadingPosts(false)
     }
     fetchPosts()
+
+    // Realtime: keep likes_count and comments_count up to date for all users
+    const channel = supabase
+      .channel('community_posts_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'community_posts' },
+        (payload) => {
+          setPosts(prev =>
+            prev.map(p =>
+              p.id === payload.new.id
+                ? { ...p, likes_count: payload.new.likes_count, comments_count: payload.new.comments_count }
+                : p
+            )
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'community_posts' },
+        () => {
+          // Re-fetch to get the new post with its profile join
+          fetchPosts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const filters: { id: FilterType; label: string }[] = [

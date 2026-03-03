@@ -300,3 +300,11 @@ CREATE TRIGGER post_comments_count_trigger
 -- =============================================
 -- Done! Tables created with RLS enabled.
 -- =============================================
+
+-- =============================================
+-- 10. ENABLE REALTIME
+-- Required for live updates in the app
+-- =============================================
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.community_posts;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.post_comments;

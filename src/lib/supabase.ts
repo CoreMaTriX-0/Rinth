@@ -369,7 +369,7 @@ export const togglePostSave = async (postId: string) => {
 export const getPostComments = async (postId: string) => {
   const { data, error } = await supabase
     .from('post_comments')
-    .select('*, profiles!left(username, avatar_url)')
+    .select('*, profiles(username, avatar_url)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
   return { data: data as PostComment[] | null, error }
