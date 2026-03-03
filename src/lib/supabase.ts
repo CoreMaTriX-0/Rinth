@@ -362,6 +362,29 @@ export const togglePostSave = async (postId: string) => {
   }
 }
 
+// Get all posts saved by the current user (with full post + profile data)
+export const getSavedPosts = async () => {
+  const user = await getCurrentUser()
+  if (!user) {
+    return { data: null, error: new Error('User not authenticated') }
+  }
+
+  const { data, error } = await supabase
+    .from('post_saves')
+    .select('id, post_id, created_at, community_posts(*, profiles!left(username, avatar_url))')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) return { data: null, error }
+
+  // Flatten so each item is a CommunityPostItem
+  const posts = (data ?? [])
+    .map((row: any) => row.community_posts as CommunityPostItem | null)
+    .filter(Boolean) as CommunityPostItem[]
+
+  return { data: posts, error: null }
+}
+
 // =============================================
 // COMMENTS
 // =============================================
