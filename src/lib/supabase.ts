@@ -278,6 +278,115 @@ export const getCommunityPosts = async (limit = 30, offset = 0) => {
 }
 
 // =============================================
+// POST INTERACTION TYPES
+// =============================================
+
+export interface PostComment {
+  id: string
+  user_id: string
+  post_id: string
+  content: string
+  created_at: string
+  profiles?: { username: string; avatar_url: string | null }
+}
+
+// =============================================
+// LIKES
+// =============================================
+
+export const checkPostLiked = async (postId: string): Promise<boolean> => {
+  const user = await getCurrentUser()
+  if (!user) return false
+  const { data } = await supabase
+    .from('post_likes')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .maybeSingle()
+  return !!data
+}
+
+export const togglePostLike = async (postId: string) => {
+  const user = await getCurrentUser()
+  if (!user) return { liked: false, error: new Error('Not signed in') }
+
+  const { data: existing } = await supabase
+    .from('post_likes')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase.from('post_likes').delete().eq('id', existing.id)
+    return { liked: false, error }
+  } else {
+    const { error } = await supabase.from('post_likes').insert({ user_id: user.id, post_id: postId })
+    return { liked: true, error }
+  }
+}
+
+// =============================================
+// SAVES
+// =============================================
+
+export const checkPostSaved = async (postId: string): Promise<boolean> => {
+  const user = await getCurrentUser()
+  if (!user) return false
+  const { data } = await supabase
+    .from('post_saves')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .maybeSingle()
+  return !!data
+}
+
+export const togglePostSave = async (postId: string) => {
+  const user = await getCurrentUser()
+  if (!user) return { saved: false, error: new Error('Not signed in') }
+
+  const { data: existing } = await supabase
+    .from('post_saves')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase.from('post_saves').delete().eq('id', existing.id)
+    return { saved: false, error }
+  } else {
+    const { error } = await supabase.from('post_saves').insert({ user_id: user.id, post_id: postId })
+    return { saved: true, error }
+  }
+}
+
+// =============================================
+// COMMENTS
+// =============================================
+
+export const getPostComments = async (postId: string) => {
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('*, profiles!left(username, avatar_url)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+  return { data: data as PostComment[] | null, error }
+}
+
+export const addPostComment = async (postId: string, content: string) => {
+  const user = await getCurrentUser()
+  if (!user) return { data: null, error: new Error('Not signed in') }
+  const { data, error } = await supabase
+    .from('post_comments')
+    .insert({ user_id: user.id, post_id: postId, content })
+    .select('*, profiles!left(username, avatar_url)')
+    .single()
+  return { data: data as PostComment | null, error }
+}
+
+// =============================================
 // IMAGE UPLOAD FUNCTIONS
 // =============================================
 

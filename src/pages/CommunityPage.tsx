@@ -179,7 +179,7 @@ const CommunityPage: React.FC = () => {
           ) : filteredPosts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts.map((post, index) => (
-                <CommunityPost key={post.id} post={post} index={index} />
+                <CommunityPost key={post.id} post={post} index={index} user={user} />
               ))}
             </div>
           ) : (

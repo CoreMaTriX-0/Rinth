@@ -193,5 +193,110 @@ CREATE POLICY "Users can delete own community posts"
     ON public.community_posts FOR DELETE USING (auth.uid() = user_id);
 
 -- =============================================
+-- 7. POST_LIKES TABLE
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.post_likes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON public.post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON public.post_likes(user_id);
+
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Post likes viewable by everyone" ON public.post_likes;
+CREATE POLICY "Post likes viewable by everyone" ON public.post_likes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can like posts" ON public.post_likes;
+CREATE POLICY "Users can like posts" ON public.post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can unlike posts" ON public.post_likes;
+CREATE POLICY "Users can unlike posts" ON public.post_likes FOR DELETE USING (auth.uid() = user_id);
+
+-- Trigger: keep likes_count in sync
+CREATE OR REPLACE FUNCTION update_post_likes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE public.community_posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE public.community_posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS post_likes_count_trigger ON public.post_likes;
+CREATE TRIGGER post_likes_count_trigger
+    AFTER INSERT OR DELETE ON public.post_likes
+    FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+
+-- =============================================
+-- 8. POST_SAVES TABLE
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.post_saves (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_saves_post_id ON public.post_saves(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_saves_user_id ON public.post_saves(user_id);
+
+ALTER TABLE public.post_saves ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own saves" ON public.post_saves;
+CREATE POLICY "Users can view own saves" ON public.post_saves FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can save posts" ON public.post_saves;
+CREATE POLICY "Users can save posts" ON public.post_saves FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can unsave posts" ON public.post_saves;
+CREATE POLICY "Users can unsave posts" ON public.post_saves FOR DELETE USING (auth.uid() = user_id);
+
+-- =============================================
+-- 9. POST_COMMENTS TABLE
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.post_comments (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON public.post_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON public.post_comments(user_id);
+
+ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Comments viewable by everyone" ON public.post_comments;
+CREATE POLICY "Comments viewable by everyone" ON public.post_comments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add comments" ON public.post_comments;
+CREATE POLICY "Users can add comments" ON public.post_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own comments" ON public.post_comments;
+CREATE POLICY "Users can delete own comments" ON public.post_comments FOR DELETE USING (auth.uid() = user_id);
+
+-- Trigger: keep comments_count in sync
+CREATE OR REPLACE FUNCTION update_post_comments_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE public.community_posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE public.community_posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS post_comments_count_trigger ON public.post_comments;
+CREATE TRIGGER post_comments_count_trigger
+    AFTER INSERT OR DELETE ON public.post_comments
+    FOR EACH ROW EXECUTE FUNCTION update_post_comments_count();
+
+-- =============================================
 -- Done! Tables created with RLS enabled.
 -- =============================================
