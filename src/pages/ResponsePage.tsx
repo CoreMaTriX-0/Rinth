@@ -758,10 +758,9 @@ const ResponsePage: React.FC = () => {
           )}
         </div>
       </main>
-      {showShareModal && projectData && (
+      {showShareModal && (
         <ShareModal
           onClose={() => setShowShareModal(false)}
-          projectData={projectData}
         />
       )}
     </div>
