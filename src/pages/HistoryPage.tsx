@@ -89,7 +89,7 @@ const HistoryPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Project History</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Your Projects</h1>
             <p className="text-gray-400">Your previously generated projects</p>
           </div>
           
@@ -130,7 +130,7 @@ const HistoryPage: React.FC = () => {
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📂</div>
             <h2 className="text-xl font-semibold text-white mb-2">
-              {filter === 'favorites' ? 'No favorite projects yet' : 'No projects in history'}
+              {filter === 'favorites' ? 'No favorite projects yet' : 'No projects yet'}
             </h2>
             <p className="text-gray-400 mb-6">
               {filter === 'favorites' 

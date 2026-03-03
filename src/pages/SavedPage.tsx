@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import {
@@ -20,11 +20,15 @@ const getDifficultyColor = (difficulty: string) => {
 }
 
 interface PostCardState {
-  modifyPrompt: string
   isGenerating: boolean
   success: boolean
   error: string | null
   unsaving: boolean
+}
+
+interface RemixModal {
+  post: CommunityPostItem
+  prompt: string
 }
 
 const SavedPage: React.FC = () => {
@@ -33,6 +37,8 @@ const SavedPage: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPostItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [cardStates, setCardStates] = useState<Record<string, PostCardState>>({})
+  const [remixModal, setRemixModal] = useState<RemixModal | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const checkUser = async () => {
@@ -66,7 +72,7 @@ const SavedPage: React.FC = () => {
       const states: Record<string, PostCardState> = {}
       data.forEach(p => {
         if (p.id) {
-          states[p.id] = { modifyPrompt: '', isGenerating: false, success: false, error: null, unsaving: false }
+          states[p.id] = { isGenerating: false, success: false, error: null, unsaving: false }
         }
       })
       setCardStates(states)
@@ -91,33 +97,43 @@ const SavedPage: React.FC = () => {
     }
   }
 
-  const handleModify = async (post: CommunityPostItem) => {
-    if (!post.id) return
-    const state = cardStates[post.id]
-    if (!state?.modifyPrompt.trim()) return
+  const openRemixModal = (post: CommunityPostItem) => {
+    setRemixModal({ post, prompt: '' })
+    // focus textarea on next tick after modal mounts
+    setTimeout(() => textareaRef.current?.focus(), 50)
+  }
+
+  const closeRemixModal = () => {
+    if (remixModal?.post.id && cardStates[remixModal.post.id]?.isGenerating) return
+    setRemixModal(null)
+  }
+
+  const handleModify = async () => {
+    if (!remixModal) return
+    const { post } = remixModal
+    const userPrompt = remixModal.prompt.trim()
+    if (!post.id || !userPrompt) return
 
     updateCardState(post.id, { isGenerating: true, error: null, success: false })
 
     try {
       const service = await GeminiService.getInstance()
 
-      // Build an enriched prompt that gives the AI full context of the original project
       const contextPrompt = [
         `I have a saved project called "${post.title}".`,
         post.description ? `Description: ${post.description}` : '',
         post.difficulty ? `Difficulty: ${post.difficulty}` : '',
         post.estimated_cost ? `Estimated cost: ${post.estimated_cost}` : '',
         (post.tags ?? []).length > 0 ? `Tags: ${post.tags!.join(', ')}` : '',
-        `Now modify this project with the following changes: ${state.modifyPrompt}`,
+        `Now modify this project with the following changes: ${userPrompt}`,
       ]
         .filter(Boolean)
         .join('\n')
 
       const project = await service.generateProjectPlan(contextPrompt)
 
-      // Save to history as a new project
       await saveProjectToHistory({
-        prompt: state.modifyPrompt,
+        prompt: userPrompt,
         title: project.title,
         description: project.description,
         difficulty: project.difficulty,
@@ -131,9 +147,9 @@ const SavedPage: React.FC = () => {
         source_community_post_id: post.id,
       })
 
-      updateCardState(post.id, { isGenerating: false, success: true, modifyPrompt: '' })
+      updateCardState(post.id, { isGenerating: false, success: true, error: null })
+      setRemixModal(null)
 
-      // Reset success banner after 4 seconds
       setTimeout(() => updateCardState(post.id!, { success: false }), 4000)
     } catch (err: any) {
       updateCardState(post.id, {
@@ -161,7 +177,7 @@ const SavedPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-white">Saved Projects</h1>
           </div>
           <p className="text-gray-400 ml-13">
-            Community projects you've saved. Remix any of them with a prompt to generate a modified version saved to your history.
+            Community projects you've saved. Remix any of them with a prompt to generate a modified version saved to your projects.
           </p>
         </div>
 
@@ -286,7 +302,7 @@ const SavedPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Spacer pushes modify area to bottom */}
+                    {/* Spacer pushes actions to bottom */}
                     <div className="flex-1" />
 
                     {/* Success banner */}
@@ -295,9 +311,9 @@ const SavedPage: React.FC = () => {
                         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Modified project saved to your{' '}
+                        Modified project saved to{' '}
                         <Link to="/history" className="underline font-medium hover:text-green-300">
-                          History
+                          Your Projects
                         </Link>
                         !
                       </div>
@@ -310,57 +326,17 @@ const SavedPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Remix / Modify section */}
-                    <div className="mt-3 pt-4 border-t border-dark-lighter">
-                      <p className="text-gray-500 text-xs mb-2 flex items-center gap-1.5">
-                        <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {/* Bottom actions */}
+                    <div className="mt-3 pt-4 border-t border-dark-lighter flex items-center justify-between gap-3">
+                      <button
+                        onClick={() => openRemixModal(post)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/60 text-primary px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Remix with AI — changes save to your History
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={state?.modifyPrompt ?? ''}
-                          onChange={e =>
-                            post.id &&
-                            updateCardState(post.id, {
-                              modifyPrompt: e.target.value,
-                              error: null,
-                            })
-                          }
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleModify(post)
-                          }}
-                          placeholder="e.g. use Raspberry Pi instead…"
-                          disabled={state?.isGenerating}
-                          className="flex-1 min-w-0 bg-dark border border-dark-lighter rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 disabled:opacity-50 transition-colors"
-                        />
-                        <button
-                          onClick={() => handleModify(post)}
-                          disabled={
-                            state?.isGenerating || !state?.modifyPrompt.trim()
-                          }
-                          className="bg-primary text-dark px-3 py-2 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 flex-shrink-0"
-                        >
-                          {state?.isGenerating ? (
-                            <>
-                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                              </svg>
-                              Generating
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              Remix
-                            </>
-                          )}
-                        </button>
-                      </div>
+                        Remix with AI
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -369,6 +345,122 @@ const SavedPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Remix Modal */}
+      {remixModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={closeRemixModal}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          {/* Modal */}
+          <div
+            className="relative w-full max-w-lg bg-dark-light border border-dark-lighter rounded-2xl shadow-2xl animate-fade-in"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-4 p-6 border-b border-dark-lighter">
+              <img
+                src={remixModal.post.image_url ?? `https://api.dicebear.com/7.x/shapes/svg?seed=${remixModal.post.title}`}
+                alt={remixModal.post.title}
+                className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-primary font-medium mb-1 flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Remix with AI
+                </p>
+                <h2 className="text-white font-bold text-lg leading-snug truncate">
+                  {remixModal.post.title}
+                </h2>
+                <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">{remixModal.post.description}</p>
+              </div>
+              <button
+                onClick={closeRemixModal}
+                className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Describe the changes you want to make
+              </label>
+              <textarea
+                ref={textareaRef}
+                rows={4}
+                value={remixModal.prompt}
+                onChange={e => setRemixModal(prev => prev ? { ...prev, prompt: e.target.value } : null)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleModify()
+                }}
+                placeholder="e.g. Replace the Arduino with a Raspberry Pi Pico, add a Bluetooth module, and make it suitable for beginners…"
+                className="w-full bg-dark border border-dark-lighter rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 resize-none transition-colors"
+              />
+              <p className="text-gray-600 text-xs mt-2">Tip: Press Ctrl + Enter to generate</p>
+
+              {/* Suggestion chips */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {[
+                  'Use Raspberry Pi instead',
+                  'Make it beginner-friendly',
+                  'Add wireless control',
+                  'Reduce the cost',
+                  'Add a display screen',
+                ].map(chip => (
+                  <button
+                    key={chip}
+                    onClick={() => setRemixModal(prev => prev ? { ...prev, prompt: chip } : null)}
+                    className="px-3 py-1.5 bg-dark border border-dark-lighter rounded-lg text-xs text-gray-400 hover:text-primary hover:border-primary/40 transition-colors"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={closeRemixModal}
+                className="flex-1 px-4 py-2.5 bg-dark border border-dark-lighter rounded-xl text-sm text-gray-400 hover:text-white hover:border-gray-500 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleModify}
+                disabled={!remixModal.prompt.trim() || (remixModal.post.id ? cardStates[remixModal.post.id]?.isGenerating : false)}
+                className="flex-1 flex items-center justify-center gap-2 bg-primary text-dark px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {remixModal.post.id && cardStates[remixModal.post.id]?.isGenerating ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Generate Remix
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
