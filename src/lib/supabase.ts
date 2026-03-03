@@ -267,6 +267,19 @@ export const shareProjectToCommunity = async (
   return { data, error }
 }
 
+// Get community posts created by the current user (to detect already-shared projects)
+export const getUserCommunityPosts = async () => {
+  const user = await getCurrentUser()
+  if (!user) return { data: null, error: new Error('User not authenticated') }
+
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select('id, project_id, title')
+    .eq('user_id', user.id)
+
+  return { data, error }
+}
+
 // Fetch all public community posts (with author profile + real comment count)
 export const getCommunityPosts = async (limit = 30, offset = 0) => {
   const { data, error } = await supabase
