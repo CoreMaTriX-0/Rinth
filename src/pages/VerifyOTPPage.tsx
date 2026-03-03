@@ -79,7 +79,7 @@ const VerifyOTPPage: React.FC = () => {
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Rinth</h1>
+          <h1 className="text-2xl font-bold text-white">Raith</h1>
         </Link>
         
         <div className="animate-fade-in">
@@ -128,7 +128,7 @@ const VerifyOTPPage: React.FC = () => {
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-white">Rinth</h1>
+            <h1 className="text-2xl font-bold text-white">Raith</h1>
           </Link>
 
           {/* Mobile Header */}
@@ -198,7 +198,7 @@ const VerifyOTPPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-white text-sm font-medium mb-0.5">Find the verification email</h3>
-                <p className="text-gray-400 text-xs">Look for an email from Rinth with subject "Confirm your email"</p>
+                <p className="text-gray-400 text-xs">Look for an email from Raith with subject "Confirm your email"</p>
               </div>
             </div>
 

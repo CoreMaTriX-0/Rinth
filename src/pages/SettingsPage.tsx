@@ -50,14 +50,14 @@ const SettingsPage: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">About Rinth</h3>
+                  <h3 className="text-xl font-bold text-white">About Raith</h3>
                   <p className="text-gray-500 text-sm">AI-powered hardware project builder</p>
                 </div>
               </div>
               
               <div className="space-y-3 text-sm text-gray-400">
                 <p>
-                  Rinth uses Google's Gemini AI to generate detailed hardware project plans,
+                  Raith uses Google's Gemini AI to generate detailed hardware project plans,
                   including components, instructions, and code.
                 </p>
                 <div className="flex items-center gap-2 pt-2">

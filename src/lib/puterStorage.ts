@@ -24,7 +24,7 @@ declare global {
   }
 }
 
-const GEMINI_API_KEY = 'rinth_gemini_api_key';
+const GEMINI_API_KEY = 'raith_gemini_api_key';
 
 // Helper to access puter from window
 const getPuter = () => (globalThis.window === undefined ? undefined : globalThis.window.puter);

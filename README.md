@@ -1,4 +1,4 @@
-# Rinth - Gadget Project Builder
+# Raith - Gadget Project Builder
 
 A modern web application that helps users build gadget projects (robotics, electronics, DIY) with AI-generated instructions, components lists, code, and shopping links.
 
@@ -217,4 +217,4 @@ This project is licensed under the MIT License.
 
 ## Support
 
-For support, email support@rinth.com or open an issue on GitHub.
+For support, email support@Raith.com or open an issue on GitHub.

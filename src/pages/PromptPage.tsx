@@ -70,7 +70,7 @@ const PromptPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="py-6 text-center text-gray-600 text-sm border-t border-dark-lighter">
-        <p>© 2026 <span className="text-primary font-semibold">Rinth</span>. Built for makers.</p>
+        <p>© 2026 <span className="text-primary font-semibold">Raith</span>. Built for makers.</p>
       </footer>
     </div>
   )

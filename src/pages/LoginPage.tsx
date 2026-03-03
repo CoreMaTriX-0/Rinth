@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white">Rinth</h1>
+          <h1 className="text-3xl font-bold text-white">Raith</h1>
         </Link>
         
         <div className="animate-fade-in">
@@ -129,7 +129,7 @@ const LoginPage: React.FC = () => {
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white">Rinth</h1>
+            <h1 className="text-3xl font-bold text-white">Raith</h1>
           </Link>
 
           {/* Mobile Header */}

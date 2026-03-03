@@ -1,4 +1,4 @@
-# Rinth - How to Start the App
+# Raith - How to Start the App
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ The app will start at `http://localhost:5173` (or another port if 5173 is busy).
 
 ## Do Users Need to Login to Puter.js?
 
-**No, users do NOT need to login to Puter.js to use Rinth.**
+**No, users do NOT need to login to Puter.js to use Raith.**
 
 ### How It Works:
 
@@ -50,14 +50,14 @@ The app will start at `http://localhost:5173` (or another port if 5173 is busy).
 ✅ Use the contextual chat assistant  
 ✅ Download project PDFs  
 
-### Optional: Rinth User Authentication
+### Optional: Raith User Authentication
 
-While Puter.js doesn't require login, **Rinth has its own optional authentication** (via Supabase) for:
+While Puter.js doesn't require login, **Raith has its own optional authentication** (via Supabase) for:
 - Saving projects to user history
 - Sharing projects to the community
 - Managing personal project library
 
-Users can use Rinth as **guest users** or **sign up** to save their work.
+Users can use Raith as **guest users** or **sign up** to save their work.
 
 ---
 
@@ -65,10 +65,10 @@ Users can use Rinth as **guest users** or **sign up** to save their work.
 
 ```bash
 # Clone the repository
-git clone https://github.com/CoreMaTriX-0/Rinth.git
+git clone https://github.com/CoreMaTriX-0/Raith.git
 
 # Navigate to frontend
-cd Rinth/frontend
+cd Raith/frontend
 
 # Install dependencies
 npm install

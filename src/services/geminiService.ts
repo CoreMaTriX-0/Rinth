@@ -126,13 +126,13 @@ export class GeminiService {
   async generateProjectPlan(query: string): Promise<EngineeringProject> {
     // 1. Quick local keyword check
     if (this.containsBlockedKeyword(query)) {
-      throw new Error("This project idea contains restricted terms. Rinth only supports safe, educational hardware projects.");
+      throw new Error("This project idea contains restricted terms. Raith only supports safe, educational hardware projects.");
     }
 
     // 2. AI-based safety classification
     const category = await this.retryWithBackoff(() => this.classifyQuery(query));
     if (category === "WEAPON") {
-      throw new Error("Weapon-related projects are strictly prohibited on Rinth.");
+      throw new Error("Weapon-related projects are strictly prohibited on Raith.");
     }
 
     const prompt = `Generate a detailed engineering project plan for building: ${query}. 
@@ -258,7 +258,7 @@ Difficulty: ${project.difficulty}
 Components: ${project.components?.slice(0, 10).map(c => c.name).join(', ') || 'N/A'}
 Steps: ${project.instructions?.length || 0} total steps`;
 
-    const systemContext = `You are the Rinth Engineering Assistant helping with: ${project.title}.
+    const systemContext = `You are the Raith Engineering Assistant helping with: ${project.title}.
 
 ${projectSummary}
 

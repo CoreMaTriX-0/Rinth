@@ -24,7 +24,7 @@ const ApiKeySettings: React.FC = () => {
             <div>
               <h3 className="text-sm font-semibold text-green-400 mb-1">No API Key Required!</h3>
               <p className="text-sm text-gray-300">
-                Rinth now uses Puter.js's free Gemini AI access. No API keys, no sign-ups, no usage limits.
+                Raith now uses Puter.js's free Gemini AI access. No API keys, no sign-ups, no usage limits.
                 Users cover their own AI usage costs through Puter's "User-Pays" model.
               </p>
             </div>

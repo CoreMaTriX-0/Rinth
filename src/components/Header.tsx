@@ -46,11 +46,11 @@ const Header: React.FC<HeaderProps> = ({ showBack = false, user = null }) => {
           <Link to="/" className="flex items-center gap-3">
             <img 
               src="/Logo.png" 
-              alt="Rinth Logo" 
+              alt="Raith Logo" 
               className="w-10 h-10 object-contain"
             />
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              Rinth
+              Raith
             </h1>
           </Link>
         </div>
