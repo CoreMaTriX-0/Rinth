@@ -242,6 +242,21 @@ export const shareProjectToCommunity = async (
     return { data: null, error: new Error('You must be signed in to share a project.') }
   }
 
+  // Ensure profile exists for this user (creates one if missing)
+  await supabase
+    .from('profiles')
+    .upsert(
+      {
+        id: user.id,
+        username:
+          user.user_metadata?.username ||
+          (user.email ? user.email.split('@')[0] + '_' + user.id.slice(0, 4) : user.id.slice(0, 8)),
+        full_name: user.user_metadata?.full_name ?? null,
+        avatar_url: user.user_metadata?.avatar_url ?? null,
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
+
   const { data, error } = await supabase
     .from('community_posts')
     .insert({ ...post, user_id: user.id })
@@ -255,7 +270,7 @@ export const shareProjectToCommunity = async (
 export const getCommunityPosts = async (limit = 30, offset = 0) => {
   const { data, error } = await supabase
     .from('community_posts')
-    .select('*, profiles(username, avatar_url)')
+    .select('*, profiles!left(username, avatar_url)')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
