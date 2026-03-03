@@ -266,15 +266,24 @@ export const shareProjectToCommunity = async (
   return { data, error }
 }
 
-// Fetch all public community posts (with author profile)
+// Fetch all public community posts (with author profile + real comment count)
 export const getCommunityPosts = async (limit = 30, offset = 0) => {
   const { data, error } = await supabase
     .from('community_posts')
-    .select('*, profiles!left(username, avatar_url)')
+    .select('*, profiles!left(username, avatar_url), post_comments(count)')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  return { data: data as CommunityPostItem[] | null, error }
+  if (error) return { data: null, error }
+
+  // Flatten the nested count into comments_count
+  const posts = ((data as any[]) ?? []).map(post => ({
+    ...post,
+    comments_count: (post.post_comments as { count: number }[] | null)?.[0]?.count ?? post.comments_count ?? 0,
+    post_comments: undefined,
+  })) as CommunityPostItem[]
+
+  return { data: posts, error: null }
 }
 
 // =============================================
