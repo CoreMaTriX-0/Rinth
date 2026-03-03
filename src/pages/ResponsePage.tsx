@@ -161,11 +161,14 @@ const ResponsePage: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<Array<{role: string, text: string}>>([])
   const [loadedProject, setLoadedProject] = useState<EngineeringProject | null>(null)
   const [loadedPrompt, setLoadedPrompt] = useState<string | null>(null)
+  const [chatActive, setChatActive] = useState(false)
+  const [tabsVisible, setTabsVisible] = useState(true)
+  const chatEndRef = useRef<HTMLDivElement>(null)
   const prompt = loadedPrompt || location.state?.prompt || 'Untitled Project'
   const projectData: EngineeringProject | null = loadedProject || location.state?.project || null
 
-  const handleRefinePrompt = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRefinePrompt = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (!newPrompt.trim() || !projectData) return
 
     const userMessage = newPrompt.trim()
@@ -176,6 +179,12 @@ const ResponsePage: React.FC = () => {
     const newHistory = [...chatHistory, { role: 'User', text: userMessage }]
     setChatHistory(newHistory)
     setNewPrompt('')
+    // Collapse above-chat UI on first interaction
+    if (!chatActive) {
+      setChatActive(true)
+      setTabsVisible(false)
+    }
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     
     try {
       // Get GeminiService instance (uses Puter.js for free AI access)
@@ -189,8 +198,10 @@ const ResponsePage: React.FC = () => {
       )
       
       // Add assistant response to chat history
-      setChatHistory([...newHistory, { role: 'Assistant', text: assistantResponse }])
+      const updatedHistory = [...newHistory, { role: 'Assistant', text: assistantResponse }]
+      setChatHistory(updatedHistory)
       setIsRefining(false)
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     } catch (err) {
       console.error('Error in chat:', err)
       setError(err instanceof Error ? err.message : 'Failed to get response. Please try again.')
@@ -580,8 +591,12 @@ const ResponsePage: React.FC = () => {
             </div>
           )}
           
-          {/* Top Action Bar */}
-          <div className="flex items-center justify-between mb-8 animate-fade-in">
+          {/* Top Action Bar — collapses when chat is active */}
+          <div className={`grid transition-all duration-500 ease-in-out ${
+            chatActive ? 'grid-rows-[0fr] opacity-0 mb-0' : 'grid-rows-[1fr] opacity-100 mb-8'
+          }`}>
+          <div className="overflow-hidden">
+          <div className="flex items-center justify-between animate-fade-in pb-0.5">
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -598,6 +613,8 @@ const ResponsePage: React.FC = () => {
               </svg>
               New Project
             </button>
+          </div>
+          </div>
           </div>
 
           {/* Main Content Grid */}
@@ -640,12 +657,33 @@ const ResponsePage: React.FC = () => {
 
             {/* Right Side - Tabs */}
             <div>
+              {/* Tabs toggle when chat is active */}
+              {chatActive && (
+                <button
+                  onClick={() => setTabsVisible(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 mb-2 bg-dark-light border border-dark-lighter rounded-xl text-sm text-gray-400 hover:text-primary hover:border-primary/40 transition-colors group"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Project Details
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform duration-300 ${tabsVisible ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+              <div className={`grid transition-all duration-500 ease-in-out ${tabsVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <div className="overflow-hidden">
               <TabsContainer 
                 instructions={projectData.instructions}
                 components={projectData.components}
                 code={Array.isArray(projectData.code) ? projectData.code : [projectData.code]}
                 buyLinks={projectData.buyingLinks || []}
               />
+              </div>
+              </div>
               
               {/* Project Assistant Chat Section */}
               <div className="mt-8 animate-fade-in">
@@ -661,8 +699,8 @@ const ResponsePage: React.FC = () => {
                   <div className="mb-4 space-y-3 max-h-96 overflow-y-auto">
                     {chatHistory.map((msg, idx) => (
                       <div key={idx} className={`p-4 rounded-lg ${
-                        msg.role === 'User' 
-                          ? 'bg-primary/10 border border-primary/30 ml-8' 
+                        msg.role === 'User'
+                          ? 'bg-primary/10 border border-primary/30 ml-8'
                           : 'bg-dark-lighter border border-dark-lighter mr-8'
                       }`}>
                         <div className="flex items-start gap-3">
@@ -687,6 +725,7 @@ const ResponsePage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                    <div ref={chatEndRef} />
                   </div>
                 )}
                 
@@ -700,7 +739,13 @@ const ResponsePage: React.FC = () => {
                   <textarea
                     value={newPrompt}
                     onChange={(e) => setNewPrompt(e.target.value)}
-                    placeholder="Ask about components, steps, alternatives, or troubleshooting..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        if (newPrompt.trim() && !isRefining) handleRefinePrompt()
+                      }
+                    }}
+                    placeholder="Ask about components, steps, alternatives… (Enter to send, Shift+Enter for new line)"
                     className="w-full bg-dark-light text-white rounded-xl px-4 py-3 pr-14 border border-dark-lighter focus:border-primary focus:outline-none resize-none transition-colors"
                     rows={3}
                     disabled={isRefining}
@@ -714,7 +759,7 @@ const ResponsePage: React.FC = () => {
                     {isRefining ? (
                       <div className="w-5 h-5 border-2 border-dark border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 -rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                     )}
