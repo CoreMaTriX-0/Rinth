@@ -9,42 +9,46 @@ const AuthCallbackPage: React.FC = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Processing auth callback...')
-        
-        // Check if there's a hash fragment (OAuth callback)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const accessToken = hashParams.get('access_token')
-        
-        console.log('Hash params:', Object.fromEntries(hashParams))
-        console.log('Access token present:', !!accessToken)
-        
-        // Wait a moment for Supabase to process the auth
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        console.log('Session data:', session)
-        console.log('Session error:', sessionError)
-        
-        if (sessionError) {
-          throw sessionError
+        // Check for OAuth errors returned in query params
+        const urlParams = new URLSearchParams(window.location.search)
+        const oauthError = urlParams.get('error')
+        const oauthErrorDescription = urlParams.get('error_description')
+
+        if (oauthError) {
+          throw new Error(oauthErrorDescription || oauthError)
         }
-        
-        if (session && session.user) {
-          console.log('User authenticated:', session.user.email)
-          // Successfully authenticated, redirect to home
-          setTimeout(() => {
+
+        // PKCE flow (Supabase v2 default): GitHub returns ?code=... in query params
+        const code = urlParams.get('code')
+
+        if (code) {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) throw exchangeError
+          if (data.session?.user) {
             navigate('/', { replace: true })
-          }, 500)
+            return
+          }
+        }
+
+        // Implicit flow fallback: check hash fragment for access_token
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const hashError = hashParams.get('error')
+        if (hashError) {
+          throw new Error(hashParams.get('error_description') || hashError)
+        }
+
+        // Final fallback: check if a session already exists
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) throw sessionError
+
+        if (session?.user) {
+          navigate('/', { replace: true })
         } else {
-          console.log('No session found after callback')
-          throw new Error('Authentication completed but no session was created')
+          throw new Error('Authentication completed but no session was created. Please try again.')
         }
       } catch (err: any) {
         console.error('Auth callback error:', err)
         setError(err.message || 'Authentication failed')
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login', { replace: true })
         }, 3000)

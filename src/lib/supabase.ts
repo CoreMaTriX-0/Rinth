@@ -4,13 +4,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.')
+  throw new Error(
+    'Missing Supabase environment variables.\n' +
+    'Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env.local file.'
+  )
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://gmjcqjzvdavafticeqgc.supabase.co',
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtamNxanp2ZGF2YWZ0aWNlcWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTI2MTQsImV4cCI6MjA4NTY4ODYxNH0.aHa-4GX6S592zKBzjZ022UHswROZxAh_uVHvvqtS0Y4'
-)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Auth helper functions
 export const signUpWithEmail = async (email: string, password: string, username: string, fullName: string) => {
@@ -203,6 +203,59 @@ export const getFavoriteProjects = async () => {
     .order('created_at', { ascending: false })
 
   return { data, error }
+}
+
+// =============================================
+// COMMUNITY POST TYPES
+// =============================================
+
+export interface CommunityPostItem {
+  id?: string
+  user_id?: string
+  project_id?: string
+  title: string
+  description: string
+  image_url?: string | null
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced'
+  estimated_cost?: string
+  tags?: string[]
+  likes_count?: number
+  comments_count?: number
+  created_at?: string
+  profiles?: { username: string; avatar_url: string | null }
+}
+
+// =============================================
+// COMMUNITY POST FUNCTIONS
+// =============================================
+
+// Share a project to the community board
+export const shareProjectToCommunity = async (
+  post: Pick<CommunityPostItem, 'title' | 'description' | 'image_url' | 'difficulty' | 'estimated_cost' | 'tags' | 'project_id'>
+) => {
+  const user = await getCurrentUser()
+  if (!user) {
+    return { data: null, error: new Error('You must be signed in to share a project.') }
+  }
+
+  const { data, error } = await supabase
+    .from('community_posts')
+    .insert({ ...post, user_id: user.id })
+    .select()
+    .single()
+
+  return { data, error }
+}
+
+// Fetch all public community posts (with author profile)
+export const getCommunityPosts = async (limit = 30, offset = 0) => {
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select('*, profiles(username, avatar_url)')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  return { data: data as CommunityPostItem[] | null, error }
 }
 
 // =============================================

@@ -1,29 +1,32 @@
 import { useState } from 'react'
-
-interface Post {
-  id: number
-  username: string
-  avatar: string
-  projectTitle: string
-  description: string
-  imageUrl: string
-  tags: string[]
-  likes: number
-  comments: number
-  timeAgo: string
-  difficulty: string
-  cost: string
-}
+import { CommunityPostItem } from '../lib/supabase'
 
 interface CommunityPostProps {
-  post: Post
+  post: CommunityPostItem
   index: number
+}
+
+const formatTimeAgo = (dateString: string) => {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 30) return `${diffDays}d ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
   const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(post.likes)
+  const [likeCount, setLikeCount] = useState(post.likes_count ?? 0)
   const [showComments, setShowComments] = useState(false)
+
+  const username = post.profiles?.username ?? 'anonymous'
+  const avatarUrl = post.profiles?.avatar_url ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
+  const timeAgo = post.created_at ? formatTimeAgo(post.created_at) : ''
 
   const handleLike = () => {
     if (liked) {
@@ -55,14 +58,14 @@ const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
       {/* Image */}
       <div className="relative overflow-hidden">
         <img
-          src={post.imageUrl}
-          alt={post.projectTitle}
+          src={post.image_url ?? `https://api.dicebear.com/7.x/shapes/svg?seed=${post.title}`}
+          alt={post.title}
           className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-dark-light via-transparent to-transparent" />
         
         {/* Difficulty Badge */}
-        <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(post.difficulty)}`}>
+        <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(post.difficulty ?? '')}`}>
           {post.difficulty}
         </span>
       </div>
@@ -72,19 +75,19 @@ const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
         {/* User Info */}
         <div className="flex items-center gap-3 mb-3">
           <img
-            src={post.avatar}
-            alt={post.username}
+            src={avatarUrl}
+            alt={username}
             className="w-8 h-8 rounded-full bg-dark-lighter"
           />
           <div className="flex-1">
-            <span className="text-white text-sm font-medium">@{post.username}</span>
-            <span className="text-gray-600 text-xs ml-2">• {post.timeAgo}</span>
+            <span className="text-white text-sm font-medium">@{username}</span>
+            <span className="text-gray-600 text-xs ml-2">• {timeAgo}</span>
           </div>
         </div>
 
         {/* Title */}
         <h3 className="text-white font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-          {post.projectTitle}
+          {post.title}
         </h3>
 
         {/* Description */}
@@ -94,7 +97,7 @@ const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.map((tag, i) => (
+          {(post.tags ?? []).map((tag, i) => (
             <span key={i} className="px-2 py-1 bg-dark rounded-md text-xs text-primary">
               #{tag}
             </span>
@@ -106,7 +109,7 @@ const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
           <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Est. cost: <strong className="text-white">{post.cost}</strong></span>
+          <span>Est. cost: <strong className="text-white">{post.estimated_cost ?? 'N/A'}</strong></span>
         </div>
 
         {/* Actions */}
@@ -135,7 +138,7 @@ const CommunityPost: React.FC<CommunityPostProps> = ({ post, index }) => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span className="text-sm">{post.comments}</span>
+            <span className="text-sm">{post.comments_count ?? 0}</span>
           </button>
 
           <button className="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors">

@@ -1,33 +1,58 @@
 import { useState } from 'react'
+import { shareProjectToCommunity, CommunityPostItem } from '../lib/supabase'
+import { EngineeringProject } from '../services/types'
 
 interface ShareModalProps {
   onClose: () => void
+  onShared?: (newPost: CommunityPostItem) => void
+  projectData?: EngineeringProject | null
 }
 
-const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
+const ShareModal: React.FC<ShareModalProps> = ({ onClose, onShared, projectData }) => {
   const [formData, setFormData] = useState({
-    projectTitle: '',
-    description: '',
-    tags: '',
-    difficulty: 'Beginner',
-    cost: '',
-    imageUrl: ''
+    projectTitle: projectData?.title ?? '',
+    description: projectData?.description ?? '',
+    tags: projectData?.tags?.join(', ') ?? '',
+    difficulty: projectData?.difficulty ?? 'Beginner',
+    cost: projectData?.estimatedCost ?? '',
+    imageUrl: projectData?.imageUrl ?? ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setSubmitted(true)
-      setTimeout(() => {
-        onClose()
-      }, 2000)
-    }, 1500)
+    setSubmitError('')
+
+    const tagsArray = formData.tags
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
+
+    const { data, error } = await shareProjectToCommunity({
+      title: formData.projectTitle,
+      description: formData.description,
+      image_url: formData.imageUrl || null,
+      difficulty: formData.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
+      estimated_cost: formData.cost || undefined,
+      tags: tagsArray,
+    })
+
+    setIsSubmitting(false)
+
+    if (error) {
+      setSubmitError(error.message || 'Failed to share project. Please try again.')
+      return
+    }
+
+    setSubmitted(true)
+    if (data && onShared) {
+      onShared(data as CommunityPostItem)
+    } else {
+      setTimeout(() => onClose(), 2000)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -185,6 +210,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
                 </>
               )}
             </button>
+            {submitError && (
+              <p className="text-red-400 text-sm text-center mt-2">{submitError}</p>
+            )}
           </form>
         )}
       </div>

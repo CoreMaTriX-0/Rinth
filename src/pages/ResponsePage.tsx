@@ -1,10 +1,11 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import ProjectImage from '../components/ProjectImage'
 import ProjectDescription from '../components/ProjectDescription'
 import TabsContainer from '../components/TabsContainer'
-import { supabase } from '../lib/supabase'
+import ShareModal from '../components/ShareModal'
+import { supabase, saveProjectToHistory } from '../lib/supabase'
 import jsPDF from 'jspdf'
 import { EngineeringProject } from '../services/types'
 import { GeminiService } from '../services/geminiService'
@@ -149,6 +150,8 @@ const ResponsePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const savedToHistoryRef = useRef(false)
   const [newPrompt, setNewPrompt] = useState('')
   const [isRefining, setIsRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -449,6 +452,30 @@ const ResponsePage: React.FC = () => {
     return () => clearTimeout(timer)
   }, [])
 
+  // Auto-save to history once when project is ready and user is logged in
+  useEffect(() => {
+    if (isLoading || !user || !projectData || savedToHistoryRef.current) return
+
+    savedToHistoryRef.current = true
+    saveProjectToHistory({
+      prompt,
+      title: projectData.title,
+      description: projectData.description,
+      image_url: projectData.imageUrl,
+      difficulty: projectData.difficulty,
+      estimated_cost: projectData.estimatedCost,
+      estimated_time: projectData.estimatedTime,
+      tags: projectData.tags,
+      instructions: projectData.instructions,
+      components: projectData.components,
+      code_blocks: Array.isArray(projectData.code) ? projectData.code : [projectData.code],
+      buy_links: projectData.buyingLinks,
+    }).catch(err => {
+      console.error('Failed to save project to history:', err)
+      savedToHistoryRef.current = false
+    })
+  }, [isLoading, user, projectData, prompt])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-dark flex flex-col">
@@ -568,15 +595,15 @@ const ResponsePage: React.FC = () => {
                   </svg>
                   Download PDF
                 </button>
-                <Link 
-                  to="/community"
+                <button 
+                  onClick={() => user ? setShowShareModal(true) : navigate('/login', { state: { returnTo: location.pathname, prompt } })}
                   className="flex-1 bg-dark-light border border-dark-lighter text-white font-semibold py-3 px-6 rounded-xl hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   Share to Community
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -700,6 +727,12 @@ const ResponsePage: React.FC = () => {
           )}
         </div>
       </main>
+      {showShareModal && projectData && (
+        <ShareModal
+          onClose={() => setShowShareModal(false)}
+          projectData={projectData}
+        />
+      )}
     </div>
   )
 }

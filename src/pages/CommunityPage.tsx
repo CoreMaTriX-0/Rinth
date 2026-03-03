@@ -2,95 +2,7 @@ import { useState, useEffect } from 'react'
 import Header from '../components/Header'
 import CommunityPost from '../components/CommunityPost'
 import ShareModal from '../components/ShareModal'
-import { supabase } from '../lib/supabase'
-
-// Mock community data - in real app, this would come from a database
-const mockPosts = [
-  {
-    id: 1,
-    username: "maker_john",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
-    projectTitle: "Smart Plant Watering System",
-    description: "Built an automated plant watering system using Arduino and soil moisture sensors. It monitors soil humidity and waters plants automatically!",
-    imageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop",
-    tags: ["Arduino", "IoT", "Gardening"],
-    likes: 124,
-    comments: 18,
-    timeAgo: "2 hours ago",
-    difficulty: "Beginner",
-    cost: "$35"
-  },
-  {
-    id: 2,
-    username: "tech_sarah",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
-    projectTitle: "Voice-Controlled LED Matrix",
-    description: "Created an 8x8 LED matrix display that responds to voice commands using an ESP32 and Google Assistant integration.",
-    imageUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=400&fit=crop",
-    tags: ["ESP32", "LED", "Voice Control"],
-    likes: 89,
-    comments: 12,
-    timeAgo: "5 hours ago",
-    difficulty: "Intermediate",
-    cost: "$45"
-  },
-  {
-    id: 3,
-    username: "robo_mike",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mike",
-    projectTitle: "Obstacle Avoiding Robot",
-    description: "My first robotics project! Used ultrasonic sensors and Arduino to make a robot that navigates around obstacles autonomously.",
-    imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&h=400&fit=crop",
-    tags: ["Robotics", "Arduino", "Ultrasonic"],
-    likes: 256,
-    comments: 34,
-    timeAgo: "1 day ago",
-    difficulty: "Beginner",
-    cost: "$50"
-  },
-  {
-    id: 4,
-    username: "diy_emma",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=emma",
-    projectTitle: "Smart Mirror with Weather Display",
-    description: "Transformed an old monitor into a smart mirror that shows weather, calendar, and news. Runs on Raspberry Pi with MagicMirror software.",
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop",
-    tags: ["Raspberry Pi", "Smart Home", "Display"],
-    likes: 342,
-    comments: 47,
-    timeAgo: "2 days ago",
-    difficulty: "Intermediate",
-    cost: "$120"
-  },
-  {
-    id: 5,
-    username: "circuit_alex",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
-    projectTitle: "Gesture-Controlled Drone",
-    description: "Modified a mini drone to be controlled by hand gestures using flex sensors and an Arduino. Super fun to fly!",
-    imageUrl: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=600&h=400&fit=crop",
-    tags: ["Drone", "Gesture Control", "Advanced"],
-    likes: 567,
-    comments: 89,
-    timeAgo: "3 days ago",
-    difficulty: "Advanced",
-    cost: "$200"
-  },
-  {
-    id: 6,
-    username: "maker_lisa",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=lisa",
-    projectTitle: "DIY Mechanical Keyboard",
-    description: "Built a custom 60% mechanical keyboard with Cherry MX switches, RGB backlighting, and a custom wooden case.",
-    imageUrl: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&h=400&fit=crop",
-    tags: ["Keyboard", "Custom Build", "RGB"],
-    likes: 189,
-    comments: 23,
-    timeAgo: "4 days ago",
-    difficulty: "Intermediate",
-    cost: "$150"
-  }
-]
+import { supabase, getCommunityPosts, CommunityPostItem } from '../lib/supabase'
 
 type FilterType = 'all' | 'trending' | 'newest' | 'beginner' | 'intermediate' | 'advanced'
 
@@ -99,22 +11,37 @@ const CommunityPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [posts, setPosts] = useState<CommunityPostItem[]>([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check current auth state
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
     }
-
     checkUser()
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoadingPosts(true)
+      setFetchError(null)
+      const { data, error } = await getCommunityPosts()
+      if (error) {
+        setFetchError('Failed to load community posts.')
+      } else {
+        setPosts(data ?? [])
+      }
+      setIsLoadingPosts(false)
+    }
+    fetchPosts()
   }, [])
 
   const filters: { id: FilterType; label: string }[] = [
@@ -126,18 +53,22 @@ const CommunityPage: React.FC = () => {
     { id: 'advanced', label: 'Advanced' },
   ]
 
-  const filteredPosts = mockPosts.filter(post => {
-    const matchesSearch = post.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    
+  const filteredPosts = posts.filter(post => {
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = !q ||
+      post.title.toLowerCase().includes(q) ||
+      post.description.toLowerCase().includes(q) ||
+      (post.tags ?? []).some(tag => tag.toLowerCase().includes(q))
+
     if (!matchesSearch) return false
-    
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+
     switch (filter) {
       case 'trending':
-        return post.likes > 100
+        return (post.likes_count ?? 0) > 20
       case 'newest':
-        return post.timeAgo.includes('hour')
+        return post.created_at ? new Date(post.created_at).getTime() > sevenDaysAgo : false
       case 'beginner':
         return post.difficulty === 'Beginner'
       case 'intermediate':
@@ -213,7 +144,7 @@ const CommunityPage: React.FC = () => {
               <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              <span><strong className="text-white">{mockPosts.length}</strong> projects shared</span>
+              <span><strong className="text-white">{posts.length}</strong> projects shared</span>
             </span>
             <span className="flex items-center gap-2">
               <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +155,16 @@ const CommunityPage: React.FC = () => {
           </div>
 
           {/* Posts Grid */}
-          {filteredPosts.length > 0 ? (
+          {isLoadingPosts ? (
+            <div className="text-center py-20">
+              <div className="loader mx-auto mb-4" />
+              <p className="text-gray-500">Loading community projects...</p>
+            </div>
+          ) : fetchError ? (
+            <div className="text-center py-16">
+              <p className="text-red-400">{fetchError}</p>
+            </div>
+          ) : filteredPosts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts.map((post, index) => (
                 <CommunityPost key={post.id} post={post} index={index} />
@@ -237,8 +177,8 @@ const CommunityPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-white text-xl font-semibold mb-2">No projects found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
+              <h3 className="text-white text-xl font-semibold mb-2">{posts.length === 0 ? 'No projects yet' : 'No projects found'}</h3>
+              <p className="text-gray-500">{posts.length === 0 ? 'Be the first to share a project!' : 'Try adjusting your search or filters'}</p>
             </div>
           )}
 
@@ -254,7 +194,15 @@ const CommunityPage: React.FC = () => {
       </main>
 
       {/* Share Modal */}
-      {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
+      {showShareModal && (
+        <ShareModal
+          onClose={() => setShowShareModal(false)}
+          onShared={(newPost) => {
+            setPosts(prev => [newPost, ...prev])
+            setShowShareModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }
