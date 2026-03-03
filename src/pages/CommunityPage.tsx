@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import CommunityPost from '../components/CommunityPost'
 import ShareModal from '../components/ShareModal'
@@ -7,6 +8,7 @@ import { supabase, getCommunityPosts, CommunityPostItem } from '../lib/supabase'
 type FilterType = 'all' | 'trending' | 'newest' | 'beginner' | 'intermediate' | 'advanced'
 
 const CommunityPage: React.FC = () => {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
@@ -22,8 +24,12 @@ const CommunityPage: React.FC = () => {
     }
     checkUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+      } else {
+        setUser(session?.user ?? null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -111,7 +117,13 @@ const CommunityPage: React.FC = () => {
               />
             </div>
             <button
-              onClick={() => setShowShareModal(true)}
+              onClick={() => {
+                if (!user) {
+                  navigate('/login')
+                  return
+                }
+                setShowShareModal(true)
+              }}
               className="bg-primary text-dark font-semibold px-6 py-3 rounded-xl hover:bg-primary-light transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

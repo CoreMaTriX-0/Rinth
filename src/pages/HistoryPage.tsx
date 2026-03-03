@@ -23,6 +23,16 @@ const HistoryPage: React.FC = () => {
     }
 
     checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/login')
+      } else if (session?.user) {
+        setUser(session.user)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [navigate])
 
   const loadHistory = async () => {

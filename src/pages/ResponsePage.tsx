@@ -434,10 +434,15 @@ const ResponsePage: React.FC = () => {
     checkUser()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        setShowLoginPrompt(false)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setShowLoginPrompt(true)
+      } else {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          setShowLoginPrompt(false)
+        }
       }
     })
 

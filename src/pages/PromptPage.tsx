@@ -18,9 +18,13 @@ const PromptPage: React.FC = () => {
     checkUser()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      console.log('Auth state changed:', session?.user?.email || 'Logged out')
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+      } else {
+        setUser(session?.user ?? null)
+      }
+      console.log('Auth state changed:', event, session?.user?.email || 'Logged out')
     })
 
     return () => subscription.unsubscribe()
