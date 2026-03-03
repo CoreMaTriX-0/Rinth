@@ -4,13 +4,17 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables.\n' +
-    'Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env.local file.'
+  console.error(
+    '[Rinth] Missing Supabase environment variables.\n' +
+    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env.local file (local dev) ' +
+    'or in your Vercel project settings (production).'
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(
+  supabaseUrl || '',
+  supabaseAnonKey || ''
+)
 
 // Auth helper functions
 export const signUpWithEmail = async (email: string, password: string, username: string, fullName: string) => {
