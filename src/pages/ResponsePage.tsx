@@ -696,7 +696,7 @@ const ResponsePage: React.FC = () => {
                 
                 {/* Chat History */}
                 {chatHistory.length > 0 && (
-                  <div className="mb-4 space-y-3 max-h-96 overflow-y-auto">
+                  <div className="mb-4 space-y-3 max-h-96 overflow-y-auto pr-2">
                     {chatHistory.map((msg, idx) => (
                       <div key={idx} className={`p-4 rounded-lg ${
                         msg.role === 'User'
@@ -718,8 +718,12 @@ const ResponsePage: React.FC = () => {
                               </svg>
                             )}
                           </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-400 mb-1">{msg.role}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-400 mb-1">
+                              {msg.role === 'User'
+                                ? (user?.user_metadata?.full_name || user?.user_metadata?.username || user?.email?.split('@')[0] || 'You')
+                                : 'Assistant'}
+                            </div>
                             <div className="text-white whitespace-pre-wrap">{msg.text}</div>
                           </div>
                         </div>
@@ -759,7 +763,7 @@ const ResponsePage: React.FC = () => {
                     {isRefining ? (
                       <div className="w-5 h-5 border-2 border-dark border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-5 h-5 -rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                     )}
